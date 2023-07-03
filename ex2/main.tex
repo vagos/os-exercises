@@ -1,0 +1,230 @@
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[18pt]{extarticle}
+
+\input{structure.cls} % Include the file specifying the document structure and custom commands
+\usepackage{dirtytalk}
+
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Βασική Διαχείρηση Μνήμης στο Linux Kernel \\Λειτουργικά Συστήματα (ECE ΓΚ702)} % Title of the assignment
+
+\author{\footnotesize Χρήστος Φείδας\\ \footnotesize \src{fidas@upatras.gr} \and \footnotesize Ευάγγελος Λάμπρου\\ \footnotesize \src{e.lamprou@upnet.gr}} % Author name and email address
+\author{}
+
+\date{University of Patras --- \the\year{}} % University, school and/or department name(s) and a date
+
+\usepackage{fancyhdr}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\pagestyle{fancy} 
+%... then configure it.
+\fancyhf{} % sets both header and footer to nothing
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{} % clear all header fields
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\footnotesize Χρήστος Φείδας, \footnotesize Ευάγγελος Λάμπρου}
+\fancyfoot[R]{\thepage}
+
+\maketitle
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{Εισαγωγή}
+
+Στην εργασία αυτή θα γίνει εξοικείωση με μερικούς βασικούς μηχανισμούς δέσμευσης μνήμης και συγχρονισμού στο Linux kernel.
+
+Το λειτουργικό σύστημα, μεταξύ άλλων, μπορεί να θεωρηθεί σαν μία διεπαφή υψηλού επιπέδου για το υλικό το οποίο τρέχει στο εκάστοτε σύστημα.
+
+\section{Το Linux Kernel API}
+
+Ο προγραμματισμός modules για το Linux Kernel έχει αρκετές διαφορές από τη συγγραφή κλασικών προγραμμάτων σε γλώσσα C.
+Βασική διαφορά είναι η έλλειψη της βασικής βιβλιοθήκης (\href{https://man7.org/linux/man-pages/man7/libc.7.html}{libc}). 
+Ένας προγραμματιστής θα πρέπει να χρησιμοποιεί τις συναρτήσεις που του γίνονται διαθέσιμες από το Linux kernel για πράξεις όπως δέσμευση μνήμης και συγχρονισμό.
+Προφανώς, υπάρχει η δυνατότητα προσθήκης νέων εργαλείων και συναρτήσεων μέσα στον πυρήνα.
+
+Όταν αναπτύσσουμε κανονικές εφαρμογές, ο κώδικάς μας έχει χαμηλές δικαιοδοσίες.
+Οι πληροφορίες και οι πόροι στα οποία έχει πρόσβαση πάντα διαχειρίζονται από το λειτουργικό σύστημα.
+Αυτό έχει σαν αποτέλεσμα την υψηλότερη ασφάλεια αλλά και τη διευκόλυνση του προγραμματιστή αφού 
+σύνθετοι μηχανισμοί όπως η δέσμευση μνήμης \say{κρύβονται} πίσω από συστήματα όπως η εικονική μνήμη.
+
+\subsection{Δέσμευση Μνήμης}
+
+Σε εφαρμογές που συνήθως αναπτύσσουμε η δέσμευση μνήμης γίνεται μέσω της συνάρτησης \src{malloc}.
+Ωστόσο, αναπτύσσοντας κώδικα σε περιβάλλον kernel έχουμε στη διάθεσή μας διαφορετικά είδη μνήμης:
+
+\begin{itemize}
+    \item Φυσική Μνήμη
+    \item Εικονική Μνήμη από το χώρο διευθύνσεων του πυρήνα
+    \item Εικονική Μνήμη από το χώρο διευθύνσεων μιας διεργασίας
+    \item Resident Μνήμη - όταν ξέρουμε με βεβαιότητα οι σελίδες μνήμης είναι παρούσες στη φυσική μνήμη
+\end{itemize}
+
+Ενδεικτικά, το πού θα συναντήσετε το κάθε είδος μνήμης:
+
+\begin{itemize}
+    \item Τα δεδομένα ενός module βρίσκονται πάντα σε resident μνήμη.
+    \item Μνήμη στο χώρο διευθύνσεων μιας διεργασίας δεν είμαστε σίγουροι πως είναι παρούσα στη φυσική μνήμη λόγω του μηχανισμού paging του λειτουργικού συστήματος.
+    \item Μνήμη στο χώρο διευθύνσεων του πυρήνα μπορεί να είναι resident ή όχι.
+    \item Δυναμική μνήμη μπορεί να είναι resident ή όχι με βάση το πώς δεσμεύτηκε.
+\end{itemize}
+
+
+Όταν χειριζόμαστε resident μνήμη, δηλαδή μνήμη που πράγματι υπάρχει στη φυσική μνήμη του συστήματός μας, μπορούμε απλά να έχουμε πρόσβαση σε οποιαδήποτε θέση της.
+Ωστόσο, non-resident μνήμη μπορεί να εκτελεστεί μόνο σε πλαίσιο διεργασίας (process context).
+Ο πυρήνας βρίσκεται σε process context όταν για παράδειγμα καλέσετε μία κλήση συστήματος (πχ. \src{fork}) μέσα από ένα πρόγραμμά σας.
+
+Για να δεσμεύσουμε resident μνήμη μέσα από το kernel χρησιμοποιούμε τη συνάρτηση \src{kmalloc}.
+
+\begin{info}[Σημείωση]
+    Η μνήμη που δεσμεύεται από την \src{kmalloc} είναι συνεχής στη φυσική μνήμη.
+    Αυτό είναι σε αντίθεση από την κλασσική συνάρτηση \src{malloc} η οποία 
+    μας επιστρέφει μνήμη η οποία δεν είναι συνεχής αλλά είναι φαινομενικά συνεχής μέσω του μηχανισμού εικονικής μνήμης του λειτουργικού συστήματος.
+\end{info}
+
+\begin{file}[kmalloc-example.c]
+    \lstinputlisting[language=C]{assets/kmalloc-example.c}
+\end{file}
+
+Η χρήση της είναι πολύ παρόμοια με τη γνωστή συνάρτηση \src{malloc} της βασικής βιβλιοθήκης της c.
+Το πρώτο όρισμο είναι το μέγεθος της δεσμευμένης περιοχής μνήμης ενώ το δεύτερο όρισμα δείχνει τον τρόπο με τον οποίο πρέπει να γίνει αυτή η δέσμευση.
+
+Μερικά από τα flags που μπορούν να χρησιμοποιηθούν για τη δέσμευση μνήμης είναι
+
+\begin{itemize}
+    \item \src{GFP\_KERNEL} όπου δεσμεύεται κανονικά μνήμη πυρήνα. Ενδεχομένως αν καλεστεί η \src{kmalloc} με αυτό το flag
+        από μία διεργασία, η διεργασία αυτή μπορεί να μπει σε αναμονή αν το σύστημα βρίσκεται σε κατάσταση χαμηλής μνήμης.
+        Ο πυρήνας θα λάβει τις κατάλληλες ενέργειες για να δεσμεύσει την απαιτούμενη μνήμη. 
+    \item \src{GFP\_ATOMIC} όπου δεσμεύεται μνήμη πυρήνα σε μέρη όπως \href{https://en.wikipedia.org/wiki/Interrupt_handler}{interrupt handlers}
+            ή kernel timers. Εδώ, η τρέχουσα διεργασία δεν γίνεται να διακοπεί.
+            Έτσι, ο πυρήνας δεσμεύει άμεσα ακόμα και την τελευταία ελεύθερη σελίδα (page).
+    \item \src{\_\_GFP\_DMA} όπου ζητείται να δεσμευτεί μνήμη η οποία μπορεί να χρησιμοποιηθεί σε DMA (Direct Memory Access)
+            από και προς συσκευές. Το ακριβές της νόημα εξαρτάται από την πλατφόρμα στην οποία βρισκόμαστε.
+\end{itemize}
+
+Σε όλα αυτα τα flags το πρόθεμα \src{GFP} αναφέρεται στη συνάρτηση \src{get\_free\_pages} 
+η οποία καλείται εσωτερικά από την \src{kmalloc}.
+
+\subsection{Μηχανισμοί Συγχρονισμού}
+
+\subsubsection{Spinlock}
+
+Ο μηχανισμός \href{https://en.wikipedia.org/wiki/Spinlock}{spinlock} είναι ένας από τις πιο απλές μεθόδους συγχρονισμού. 
+Βεβαιώνει πως ο κώδικας μέσα στο spinlock block εκτελείται μόνο από ένα νήμα.
+Ωστόσο, αποκλεισμός μέσω spinlocks είναι ακατάλληλος για critical regions με μεγάλο χρόνο εκτέλεσης
+διότι άλλοι threads που θέλουν να έχουν πρόσβαση στο critical region θα κάνουν συνεχή έλεγχο της διαθεσιμότητας (θα κάνουν spin).
+
+\begin{file}[atomic\_t-example.c]
+        \lstinputlisting[language=C]{./assets/spinlock-example.c}
+\end{file}
+
+\begin{info}[]
+   Περισσότερες πληροφορίες για τις λεπτομέρειες χρήσης των spinlocks 
+    μπορείτε να βρείτε στο \href{https://docs.kernel.org/locking/spinlocks.html}{kernel documentation}.
+\end{info}
+
+
+\subsubsection{Mutex}
+
+Τα mutexes αναπαρίστανται στο Linux kernel ως δομές \src{struct mutex}.
+Η χρήση τους και η λειτουργία τους είναι παρόμοια με αυτή των κλασσικών mutexes σε user space.
+Το mutex αποκτάται (lock) πριν το critical region και απελευθερώνεται (unlock) στο τέλος της.
+
+\subsubsection{Ατομικές Μεταβλητές (Atomic Variables)}
+
+Για τον συγχρονισμό της πρόσβασης σε μία μεταβλητή, το Linux kernel προσφέρει ατομικές ματαβλητές 
+μέσω του τύπου \src{atomic\_t} ο οποίος κρατάει μια ακέραια τιμή. 
+Αυτό είναι μια διεπαφή για την χρήση των \href{https://en.wikipedia.org/wiki/Read\%E2\%80\%93modify\%E2\%80\%93write}{RMW} (Read Modify Write) λειτουργιών των διάφορων επεξεργαστών.
+Αυτές οι ατομικές λειτουργίες μπορούν να διαβάσουν μία θέση μνήμης και να γράψουν σε αυτή ταυτόχρονα.
+
+\begin{file}[atomic\_t-example.c]
+        \lstinputlisting[language=C]{./assets/atomic_t-example.c}
+\end{file}
+
+
+\begin{info}[Σημείωση]
+    Ο τύπος \src{atomic\_t} ορίζεται στο αρχείο \src{linux/include/linux/atomic.h}.
+    Στην ουσία είναι ένα περίβλημα γύρω από γνωστούς τύπους ακεραίων (\src{int}, \src{long int}).
+\end{info}
+
+Η χρήση των ατομικών μεταβλητών μπορεί να γίνει για την αποκλειστική πρόσβαση σε έναν πόρο του συστήματος όπως μία συσκευή.
+
+\section{Ασκήσεις}
+
+\begin{question}
+    Βρείτε στον πηγαίο κώδικα του Kernel τους ορισμούς των συμβόλων. Μπορείτε να χρησιμοποιήσετε το εργαλείο αναζήτησης \href{https://elixir.bootlin.com/linux/latest/source}{LXR}
+    \begin{enumerate}
+        \item \src{kmalloc}
+        \item \src{kfree}
+        \item \src{get\_free\_pages}
+        \item \src{atomic\_t}
+        \item \src{atomic\_read}
+    \end{enumerate}
+   Εξηγήστε τη σημασία τους. 
+\end{question}
+
+\begin{question}
+   Γράψτε ένα Kernel module το οποίο όταν φορτωθεί θα δεσμεύει μνήμη μεγέθους 4096 bytes
+   και στη συνέχεια θα τυπώνει τα περιεχόμενά της.
+   Φροντίστε με την εκφόρτωση του module να απελευθερώνεται η μνήμη.
+\end{question}
+
+\begin{question}
+    Φτιάξτε ένα kernel module το οποίο θα βρίσκει το \src{task\_struct *}
+    που θα αντιστοιχεί σε μία διεργασία με ένα δοθέντο \src{PID} και εξετάστε το \src{mm} μέλος του \src{task\_struct *}. Τυπώστε το πεδίο του \src{mm\_users}.
+    Αυτό περιέχει τον αριθμό των διεργασιών που μοιράζονται αυτή τη θέση μνήμης. 
+    Βασιστείτε στον κώδικα που δίνεται στο αρχείο \src{process-mm-module.c}.
+    
+    Ξεκινήστε μία διεργασία η οποία θα δημιουργεί μερικά threads.
+    Μπορείτε να βασιστείτε στον παρακάτω κώδικα.
+
+    \begin{file}[threads.c]
+        \lstinputlisting[language=C]{../src/process-mm/threads.c}
+    \end{file}
+
+    Τρέξτε τον παραπάνω κώδικα χρησιμοποιώντας τις εντολές:
+
+    \begin{commandline}
+\begin{verbatim}
+$ gcc -o thread threads.c
+$ ./threads
+\end{verbatim}
+    \end{commandline}
+    
+    Μόλις αρχίσει να τρέχει, η διεργασία αυτή θα τυπώσει το PID της.
+    Αν έχετε ήδη φορτώσει το module σας, ξεφορτώστε το και επαναφορτώσετε το ορίζοντας σε αυτό το PID του προγράμματος \src{threads}.
+
+    Στον κώδικα έχει προστεθεί ένα kernel parameter ώστε να γίνει πιο εύκολος ο ορισμός του νέου PID.
+    Τα kernel parameters είναι χρήσιμα για την παραμετρικοποίηση ενός module κατά τη φόρτωση.
+    Πλέον, όταν φορτώνετε το module, μπορείτε να ορίσετε διαφορετικό PID διεργασίας το οποίο θα ψάξει χωρίς να χρειάζεται να το επαναμεταγλωττίσετε.
+
+    Ωστόσο, αν κάνετε αλλαγές στον κώδικα του module θα πρέπει όπως πριν να το μεταγλωττίσετε ξανά.
+
+    \begin{commandline}
+\begin{verbatim}
+$ sudo insmod process-mm-module PID=$PID # specify PID when loading module
+$ sudo rmmod process-mm-module # unload normally
+\end{verbatim}
+    \end{commandline}
+    
+    Τί παρατηρείτε όταν το module σας τυπώνει την τιμή του πεδίου \src{task->mm->mm\_users}?
+\end{question}
+
+\section{Πηγές}
+
+\begin{itemize}
+    \item \href{https://sysprog21.github.io/lkmpg/}{Linux Kernel Module Programming Guide}
+    \item \href{https://lwn.net/Kernel/LDD3/}{Linux Device Drivers}
+    \item Operating System Concepts 9th Edition - Silbershatz, Galvin, Gagne (ch. 18)
+\end{itemize}
+
+\end{document}
