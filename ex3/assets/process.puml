@@ -1,0 +1,18 @@
+@startuml
+skinparam componentStyle rectangle
+
+node "User Space Applications" {
+[Process (./forking)] as Process
+[Other Processes ...]
+}
+
+node "Kernel" {
+    [Kernel Core]
+    [Device Drivers] --> Devices : Find
+
+}
+
+node "Devices" {
+}
+
+@enduml

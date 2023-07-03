@@ -1,0 +1,14 @@
+@startuml
+skinparam componentStyle rectangle
+
+node "Kernel Space" {
+    [Device Data] as Device
+}
+
+node "User Space" {
+    [User Buffer] as User
+    User <-l-- Device : read(fd, buffer. size)
+    User ---> Device : write(fd, buffer. size)
+}
+
+@enduml
