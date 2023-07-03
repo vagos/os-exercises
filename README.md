@@ -1,4 +1,6 @@
-Resources for beginners who want to get started with Kernel development.
+**Resources**
+
+For beginners who want to get started with Kernel development.
 
 Online:
 
@@ -10,3 +12,7 @@ Books:
 
 * [Linux Device Drivers](https://www.oreilly.com/openbook/linuxdrive3/book/)
 * Linux Kernel Development (3rd Edition)
+
+**Contributing**
+
+Pull Requests and Issues are welcome!
