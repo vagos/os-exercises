@@ -1,0 +1,19 @@
+@startuml
+skinparam componentStyle rectangle
+
+node "User Space" {
+[Process (./forking)] as Process
+Process --> [Child 1]
+Process --> [Child 2]
+Process --> [Child 3]
+[Other Processes ...]
+}
+
+node "Kernel" {
+    [Kernel Core]
+    [Our Module] --> Process : Find
+    [Our Module] <--> [Kernel Core]
+
+}
+
+@enduml
