@@ -6,7 +6,7 @@ Online:
 * [Linux Kernel Module Programming Guide](https://sysprog21.github.io/lkmpg/)
 * [Kernel development from scratch](http://nuclear.mutantstargoat.com/articles/kerneldev/) 
 
-Βιβλία:
+Books:
 
 * [Linux Device Drivers](https://www.oreilly.com/openbook/linuxdrive3/book/)
 * Linux Kernel Development (3rd Edition)
