@@ -1,0 +1,89 @@
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[18pt]{extarticle}
+
+\input{structure.cls} % Include the file specifying the document structure and custom commands
+
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Χρόνο-προγραμματισμός Διεργασιών στο \src{xv6} Kernel \\Λειτουργικά Συστήματα (ECE ΓΚ702)} % Title of the assignment
+
+\author{\footnotesize Χρήστος Φείδας\\ \footnotesize \src{fidas@upatras.gr} \and \footnotesize Ευάγγελος Λάμπρου\\ \footnotesize \src{e.lamprou@upnet.gr}} % Author name and email address
+
+\date{University of Patras --- \the\year{}} % University, school and/or department name(s) and a date
+
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage[main=greek, english]{babel}
+
+%----------------------------------------------------------------------------------------
+\bibliography{bibliography}
+
+\begin{document}
+
+\pagestyle{fancy}
+%... then configure it.
+\fancyhf{} % sets both header and footer to nothing
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{} % clear all header fields
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\footnotesize Χρήστος Φείδας, \footnotesize Ευάγγελος Λάμπρου}
+\fancyfoot[R]{\thepage}
+
+\maketitle
+
+\tableofcontents
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{Εισαγωγή}
+
+Ο χρονοπρογραμματισμός διεργασιών είναι μία από τις σημαντικότερες 
+αρμοδιότητες ενός λειτουργικού συστήματος.
+
+\subsection{Context Switching}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{assets/sched/switch.png}
+    \caption{Context switch από μία διεργασία χρήστη (\src{shell}) 
+    προς μία ρουτίνα πυρήνα (\src{scheduler}) και τελικά 
+    σε μία άλλη διεργασία χρήστη (\src{cat}).}
+\end{figure}
+
+\section{Process Scheduling}
+
+\subsection{Πολιτικές Προγραμματισμού}
+
+\section{Ασκήσεις}
+
+\begin{question}
+    Πώς αναπαρίσταται μία διεργασία στο xv6 kernel;
+    Εξηγήστε τη σημασία καθενός από τα members του struct 
+    το οποίο αντιπροσωπεύει μία διεργασία στο σύστημα.
+
+    \begin{info}[Σημείωση:]
+        Κοιτάξτε στο αρχείο \src{kernel/proc.h}.
+    \end{info}
+\end{question}
+
+\begin{question}
+    Ποια είναι η συνάρτηση \src{scheduler}, ποια είναι η συνάρτηση \src{sched} και ποια είναι η διαφορά τους;
+\end{question}
+
+\begin{question}
+    Υλοποιήστε την συνάρτηση \src{scheduler} ώστε να υποστηρίζει την πολιτική προγραμματισμού Lottery Scheduling.
+
+    Το Lotter Scheduling θα λειτουργεί ως εξής:
+
+\end{question}
+
+\printbibliography
+
+\end{document}
