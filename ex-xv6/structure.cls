@@ -45,6 +45,7 @@
     urlcolor=cyan,
 }
 
+
 %----------------------------------------------------------------------------------------
 %	DOCUMENT MARGINS
 %----------------------------------------------------------------------------------------
@@ -191,7 +192,6 @@
 	\stepcounter{Question}
 	\newcommand{\questionTitle}{~#1}
 	\begin{mdframed}[style=question]
-    \sloppy
 }{
 	\end{mdframed}
 	\medskip
