@@ -45,6 +45,7 @@
     urlcolor=cyan,
 }
 
+\usepackage[backend=bibtex]{biblatex}
 
 %----------------------------------------------------------------------------------------
 %	DOCUMENT MARGINS
