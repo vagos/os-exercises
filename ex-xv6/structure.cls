@@ -22,6 +22,8 @@
 \setlength{\parindent}{0em}
 \setlength{\parskip}{.5em}
 
+\usepackage[main=greek,english]{babel}
+
 \usepackage{amsmath,amsfonts,stmaryrd,amssymb} % Math packages
 
 \usepackage{enumerate} % Custom item numbers for enumerations
@@ -30,9 +32,10 @@
 
 \usepackage[framemethod=tikz]{mdframed} % Allows defining custom boxed/framed environments
 
-\usepackage{dirtytalk}
+\usepackage{enumitem}
 
 \usepackage{listings} % File listings, with syntax highlighting
+
 \lstset{
 	basicstyle=\ttfamily, % Typeset listings in monospace font
 }
@@ -44,8 +47,6 @@
     filecolor=magenta,      
     urlcolor=cyan,
 }
-
-\usepackage[backend=bibtex]{biblatex}
 
 %----------------------------------------------------------------------------------------
 %	DOCUMENT MARGINS
@@ -73,6 +74,17 @@
 \usepackage[T1]{fontenc} % Output font encoding for international characters
 
 \usepackage{XCharter} % Use the XCharter fonts
+
+\usepackage{csquotes}
+\usepackage{dirtytalk}
+
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+\usepackage[backend=bibtex]{biblatex}
+
 
 %----------------------------------------------------------------------------------------
 %	COMMAND LINE ENVIRONMENT
