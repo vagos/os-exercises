@@ -23,6 +23,78 @@
 %----------------------------------------------------------------------------------------
 \bibliography{bibliography}
 
+\usepackage{adjustbox}
+\usepackage{tikz}
+\usetikzlibrary{trees}
+\usetikzlibrary{fit}
+\usetikzlibrary{shapes}
+\usetikzlibrary{arrows.meta, positioning, shadows}
+\usetikzlibrary{chains,shapes.multipart}
+\usetikzlibrary{external}
+\usetikzlibrary{matrix}
+\usetikzlibrary{shapes.callouts}
+
+\tikzstyle{rect} = [rectangle,fill=white, text centered, draw]
+\tikzstyle{database} = [draw, cylinder, shape border rotate = 90, aspect = 0.2]
+\tikzstyle{thick-arrow} = [->, thick]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+\tikzstyle{arrow-small} = [->,>=stealth]
+\tikzstyle{simple-rect} = [rectangle, text centered, draw = black, inner sep=4mm]
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
+\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=orange!30]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+\tikzset{
+    dcs/.style = {double copy shadow},
+}
+
+% taken from manual
+\makeatletter
+\pgfdeclareshape{document}{
+\inheritsavedanchors[from=rectangle] % this is nearly a rectangle
+\inheritanchorborder[from=rectangle]
+\inheritanchor[from=rectangle]{center}
+\inheritanchor[from=rectangle]{north}
+\inheritanchor[from=rectangle]{south}
+\inheritanchor[from=rectangle]{west}
+\inheritanchor[from=rectangle]{east}
+% ... and possibly more
+\backgroundpath{% this is new
+% store lower right in xa/ya and upper right in xb/yb
+\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+% compute corner of ‘‘flipped page’’
+\pgf@xc=\pgf@xb \advance\pgf@xc by-10pt % this should be a parameter
+\pgf@yc=\pgf@yb \advance\pgf@yc by-10pt
+% construct main path
+\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}}
+\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}}
+\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yb}}
+\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yc}}
+\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}}
+\pgfpathclose
+% add little corner
+\pgfpathmoveto{\pgfpoint{\pgf@xc}{\pgf@yb}}
+\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yc}}
+\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yc}}
+\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yc}}
+}
+}
+\makeatother
+
+\tikzstyle{doc}=[%
+draw,
+thick,
+align=center,
+color=black,
+shape=document,
+minimum width=20mm,
+minimum height=28.2mm,
+shape=document,
+inner sep=2ex,
+]
+
 \begin{document}
 
 \pagestyle{fancy}
@@ -32,12 +104,12 @@
 \fancyhead{} % clear all header fields
 \fancyfoot{} % clear all footer fields
 \fancyhead[L]{Λειτουργικά Συστήματα (ECE ΓΚ702)}
-\fancyfoot[L]{\footnotesize Χρήστος Φείδας, \footnotesize Ευάγγελος Λάμπρου}
+\fancyfoot[L]{}
 \fancyfoot[R]{\thepage}
 
 \maketitle
 
-\tableofcontents
+% \tableofcontents
 
 %----------------------------------------------------------------------------------------
 %	INTRODUCTION
@@ -50,25 +122,181 @@
 Είναι ένας πολύ καλός τρόπος αρχάριοι μηχανικοί συστημάτων να εξοικιωθούν με την ανάγνωση και συγγραφή 
 κώδικα λειτουργικών συστημάτων. Ολόκληρο το πρότζεκτ έχει έκταση $\sim 6000$ γραμμών 
 \src{C}, με μέρος του κώδικα γραμμένο σε \src{assembly}.
-
 Υπάρχει πλούσιο περιεχόμενο online για να μελετήσετε εις βάθος τις λεπτομέρειες
 των λειτουργιών του πυρήνα xv6 \cite{xv6VideoSeries, xv6Book}.
 
-\subsection{User Space \& Kernel Space}
+Στόχος των εργασιών αυτών είναι η εξοικοίωση με μέρη της υλοποίησης ενός πύρηνα και
+η πλοήγηση μέσα σε μία μεγάλη βάση κώδικα.
 
 \section{System Calls}
 
+\subsection{User Space \& Kernel Space}
+
+Ο διαχωρισμός μεταξύ χώρου χρήστη (user space) και χώρου πυρήνα (kernel space) είναι ένας από τους
+σημαντικότερους μηχανισμούς που παρέχει ένα λειτουργικό σύστημα. Ο χώρος χρήστη είναι ο χώρος
+στον οποίο όλες οι διεργασίες του χρήστη εκτελούνται. Ο χώρος πυρήνα είναι όπου γίνονται 
+όλες οι ευαίσθητες λειτουργίες του συστήματος, όπως η διαχείριση της μνήμης, η διαχείριση των
+διεργασιών, η διαχείριση των συσκευών κ.α. Ο χώρος πυρήνα είναι προστατευμένος από το χώρο χρήστη
+και η επικοινωνία μεταξύ των δύο γίνεται από καθορισμένα σημεία επαφής (interfaces).
+Ένα από αυτά τα σημεία επαφής είναι οι κλήσεις συστήματος (system calls).
+
+Όταν μία διεργασία όπως ένας task manager τρέχει στον υπολογιστή μας, γίνεται μία \textquote{συζήτηση}
+μεταξύ αυτής και του πυρήνα. Η διεργασία ζητάει από τον πυρήνα πληροφορίες για τις διεργασίες
+και τις συσκευές που υπάρχουν στο σύστημα. Ο πυρήνας απαντάει στην διεργασία με τις πληροφορίες
+που ζήτησε. Αυτή η συζήτηση γίνεται μέσω των κλήσεων συστήματος. 
+Συνύθως, οι κλήσεις συστήματος είναι \textquote{κρυμμένες} πίσω από τη βασική βιβλιοθήκη της εκάστοτε γλώσσας που χρησιμοποιούμε.
+(π.χ. \src{libc} στην \src{C}, όπου η συνάρτηση \src{printf} καλεί την κλήση συστήματος \src{write}).
+
+\begin{figure}
+    \begin{center}
+        \begin{adjustbox}{max totalsize={\textwidth}}
+\begin{tikzpicture}[node distance=4cm, label distance=5mm]
+
+        \node[doc, align=left, label=below:{System call invocation in user program}] (syscall-program) {... \\ \src{xyz()} \\ ...};
+        \node[doc, align=left, right=of syscall-program, label=below:{System call interrupt routine}] (syscall) {xyz: \\ movl \$SYS\_xyz, \%eax; \\ int \$T\_SYSCALL \\ ret};
+
+        \node[draw, dotted, fit=(syscall-program) (syscall), inner sep=4mm, label=above:{User Space}] {};
+
+        \node[doc, align=left, right=of syscall, label=below:{System call handler}] (syscall-handler) {syscall() \{ \\ ... \\ syscalls[num](); \\ ... \\ \}};
+        \node[doc, align=left, right=of syscall-handler, label=below:{System call service routine}] (syscall-kernel) {sys\_xyz() \{ \\ ... \\ \textit{actual system call code} \\ ... \\ \}};
+
+        \node[draw, dotted, fit=(syscall-handler) (syscall-kernel), inner sep=4mm, label=above:{Kernel Space}] {};
+
+        \draw [arrow] (syscall-program) -- node[above] {System call invocation} (syscall);
+        \draw [arrow] (syscall) -- node[above] {Interrupt (Trap)} (syscall-handler);
+        \draw [arrow] (syscall-handler) -- node[above] {System call handling} (syscall-kernel);
+
+\end{tikzpicture}
+        \end{adjustbox}
+    \end{center}
+    \caption{Η επικοινωνία εφαρμογών χρήστη με το λειτουργικό σύστημα μέσω κλήσεων συστήματος (system calls).}
+    \label{fig:syscalls}
+\end{figure}
+
+
 \subsection{System Calls στο xv6}
+
+Η επικάλεση ενός system call από μία διεργασία στο xv6 ακολουθεί την εξής ακολουθία:
+
+\begin{enumerate}
+    \item Ένα πρόγραμμα χρήστη καλεί μία system call (π.χ \src{read})
+    \item Ο αριθμός που αντιστοιχεί στη συγκεκριμένη system call αποθηκεύεται στον καταχωρητή \src{EAX} και καλείται στον επεξεργαστή interrupt (trap) 
+    \item Το λειτουργικό σύστημα αντιπετωπίζει αυτό το trap διαβάζωντας τον αριθμό του trap το οποίο καλέστηκε. Έπειτα, καλεί την αντίστοιχη system call ανάλογα 
+        με τον αριθμό που βλέπει αποθηκευμένο στον καταχωρητή \src{EAX}.
+\end{enumerate}
+
+Παρακάτω φαίνεται ο \src{assembly} κώδικας ο οποίος εκτελείται όταν καλείται μία system call από μία διεργασία χρήστη.
+Ο ορισμός του κώδικα για την κάθε διαφορετική system call γίνεται με τη χρήση της μακροεντολής 
+(\href{https://gcc.gnu.org/onlinedocs/cpp/Macros.html}{macro}) \src{SYSCALL}.
+
+\begin{file}[ulib/usys.S]
+\begin{verbatim}
+#define SYSCALL(name)         \
+  .globl name;                \
+  name:                       \
+    movl $SYS_ ## name, %eax; \ // move SYSCALL number into EAX register
+    int $T_SYSCALL;           \ // execute processor interrupt
+    ret
+
+SYSCALL(fork)
+SYSCALL(exit)
+SYSCALL(read)
+\end{verbatim}
+\end{file}
+
+% The user-space code for systems calls is in user/user.h and user/usys.pl.
+% The kernel-space code is kernel/syscall.h, kernel/syscall.c.
+% The process-related code is kernel/proc.h and kernel/proc.c.
+
+\begin{info}[Σημείωση:]
+    Ο κώδικας του xv6 που αφορά τα system calls βρίσκεται:
+
+    \begin{itemize}
+        \item Ο user-space κώδικας στα αρχεία \src{include/user.h} και \src{ulib/usys.S}
+        \item Ο kernel-space κώδικας στα αρχεία \src{include/syscall.h} και \src{kernel/syscall.c} 
+    \end{itemize}
+\end{info}
 
 \section{Προετοιμασία}
 
-\subsection{Εγκατάσταση του xv6}
+Για την εκπόνηση των εργασιών προτείνεται να δουλέψετε σε μηχάνημα που τρέχει Linux.
+Οδηγιές για το πώς να ετοιμάσετε μια εικονική μηχανή με Debian Linux σε VirtualBox μπορείτε να βρείτε \href{}{εδώ}. % TODO link
+Αν έχετε ήδη μηχάνημα το οποίο τρέχει Linux και συγκεκριμένα κάποιο
+Debian-based distribution (π.χ. Ubuntu) τότε μπορείτε να προχωρήσετε.
+Για όσους έχουν κάποιο Arch Linux-based distribution (π.χ. Manjaro) μπορείτε να βρείτε πώς να ολοκληρώσετε τις εργασίες
+με τη χρήση Docker \href{}{εδώ}. % TODO link
 
-\subsection{Εγκατάσταση του QEMU}
+\subsection{Προτεινόμενο Διάβασμα}
 
-\subsection{Πρώτη εκτέλεση}
+Διαβάστε από το βιβλίο του xv6 \cite{xv6Book} το κεφάλαιο 1 (\textit{Operating
+system organisation}) και το κεφάλαιο 3 (\textit{Traps, interrupts, and
+drivers}) μέχρι την ενότητα \textit{Drivers}.
+
+Δείτε ένα επεξηγηματικό βίντεο για το πώς λειτουργούν οι system calls στο xv6 \href{https://www.youtube.com/watch?v=w7Q66ItKrn8}{εδώ}.
+
+\subsection{Προετοιμασία Συστήματος}
+
+Αφού είστε μέσα στο Linux σύστημά σας, πρέπει να κατεβάσετε ορισμένα πακέτα που θα χρειαστείτε για την εκπόνηση των εργασιών.
+
+\begin{commandline}
+\begin{verbatim}
+$ sudo apt-get install build-essential gdb git qemu
+\end{verbatim}
+\end{commandline}
+
+Κατά τη διάρκεια εκπόνησης των εργασιών συνίσταται να κρατάτε εκδόσεις της δουλειάς σας χρησιμοποιώντας το \src{git}
+ώστε να γίνεται πιο εύκολα ο εντοπισμός λαθών μεταξύ των διαφόρων εκδόσεων του κώδικά σας.
+Μία σύντομη εισαγωγή για το εγαλείο μπορείτε να βρείτε \href{https://rogerdudler.github.io/git-guide/}{εδώ}. 
+
+\subsection{Προετοιμασία του xv6}
+
+Θα πρέπει να κατεβάσετε τον πηγαίο κώδικα του xv6.
+
+\begin{commandline}
+\begin{verbatim}
+$ git clone https://github.com/vagos/xv6
+\end{verbatim}
+\end{commandline}
+
+Μέσα στον φάκελο \src{xv6} θα βρείτε τον πηγαίο κώδικα του xv6.
+Ο κώδικας είναι οργανωμένος σε φακέλους με τον εξής τρόπο: 
+
+\begin{itemize}[label={--}]
+    \item \src{kernel}: Κώδικας του πυρήνα.
+    \item \src{include}: Αρχεία κεφαλίδων που χρησιμοποιούνται από τον πυρήνα και τις εφαρμογές.
+    \item \src{ulib}: Βασικές βιβλιοθήκες που χρησιμοποιούνται από τις εφαρμογές χρήστη.
+    \item \src{user}: Κώδικας εφαρμογών χρήστη. Αυτές είναι εφαρμογές όπως αυτές που τρέχουν σε user space και αλληλεπιδρούν με τον πυρήνα μέσω των κλήσεων συστήματος.
+    \item \src{tools}: Εργαλεία που χρησιμοποιούνται για την εκτέλεση του xv6 (π.χ. \src{mkfs} το οποίο χρησιμοποιείται για τη δημιουργία του image από το οποίο θα κάνει boot το λειτουργικό σύστημα.).
+\end{itemize}
+
+Μέσα στο φάκελο \src{xv6} θα βρείτε και το αρχείο \src{Makefile} το οποίο χρησιμοποιείται για την κατασκευή του xv6 με τη χρήση του προγράμματος \src{make}.
+
+\begin{commandline}
+\begin{verbatim}
+$ make # Compile xv6
+$ make qemu # Run xv6 on qemu
+\end{verbatim}
+% $ make qemu-gdb # Run xv6 on qemu and wait for gdb (gnu debugger) connection
+\end{commandline}
 
 \section{Ασκήσεις}
+
+\begin{question}
+    Δημιουργήστε ένα πρόγραμμα χρήστη για το xv6.
+
+    Μέσα στο φάκελο \src{user}, δημιουργήστε ένα αρχείο με ό'τι όνομα θέλετε. Εκεί, γράψτε ένα πρόγραμμα
+    σε γλώσσα \src{C} το οποίο θα κάνει κάτι χρήσιμο. Δώστε προσοχή 
+    σε ποιες συναρτήσεις έχετε πρόσβαση. Εδώ, δεν μπορείτε να χρησιμοποήσετε τη βασική βιβλιοθήκη που έχει δημιουργηθεί για το xv6 (\src{ulib}).
+
+    Έπειτα, επεξεργαστείτε κατάλληλα το αρχείο \src{Makefile} ώστε να προστεθεί το πρόγραμμα στο image του xv6 κατά την κατασκευή του.
+
+    Εκτλέστε \src{make qemu} και χρησιμοποιήστε το πρόγραμμα που δημιουργήσατε μέσα στο xv6.
+
+    \begin{info}[Σημείωση:]
+        Μπορείτε να βρείτε τις συναρτήσεις στις οποίες έχετε πρόσβαση σε περιβάλλον χρήστη στο αρχείο \src{include/user.h}.
+    \end{info}
+
+\end{question}
 
 \begin{question}
     Αναζητώντας μέσα στον πηγαίο κώδικα του xv6, βρείτε την 
@@ -81,18 +309,39 @@
 \end{question}
 
 \begin{question}
-    Καταγράψτε τα system calls που καλούνται προσθέστε τον κατάλληλο κώδικα στο σημείο που 
-    διαχειρίζονται οι κλήσεις συστήματος.
+    Βρείτε τη συνάρτηση μέσα στον kernel κώδικα όπου τελικά εκτελούνται οι system calls.
     Καταγράψτε τη σειρά των ενεργειών που γίνονται όταν καλείται ένα system call.
 \end{question}
 
 \begin{question}
-    Προσθέστε μία κλήση συστήματος η οποία θα εκτελεί λειτουργία απενεργοποίησης (shutdown). 
+    Προσθέστε μία κλήση συστήματος η οποία θα επιστρέφει τον αγαπημένο σας αριθμό.
+    Η κλήση που θα φτιάξετε πρέπει να έχει το εξής πρωτότυπο: \src{int getfavnum(void)}.
+    Προφανώς, μία τέτοια κλήση δεν έχει κανέναν πρακτικό σκοπό αφού δεν εκμεταλεύεται κάποια πληροφορία ή 
+    πόρο που κατέχει το λειτουργικό σύστημα. Ωστόσο, βοηθάει στο να κατανοήσουμε τον τρόπο με τον οποίο
+    προστίθενται κλήσεις συστήματος στο xv6.
+\end{question}
+
+\begin{question}
+    Προσθέστε μία κλήση συστήματος η οποία θα εκτελεί λειτουργία \textquote{shutdown}. 
+    Η κλήση που θα φτιάξετε πρέπει να έχει το εξής πρωτότυπο: \src{void halt(void)}.
+    Έπειτα, φτιάξτε ένα πρόγραμμα χρήστη με όνομα \src{shutdown} το οποίο θα καλεί την κλήση συστήματος που φτιάξατε, ώστε 
+    χρήστες του xv6 να μπορούν πλέον να κάνουν shutdown το σύστημα χωρίς να χρειάζεται να το κάνουν από το host μηχάνημα.
+
+    Σε αυτή τη κλήση συστήματος θα πρέπει να επικοινωνήσετε άμεσα με το hardware της εικονικής μηχανής (στην περίπτωσή μας το QEMU).
+    Για την απενεργοποίηση του συστήματος το hardware περιμένει σε κάποια συγκεκριμένγ διεύθυνση (port) να υπάρξει μία συγκεκριμένη 
+    τιμή. Οι αριθμοί για αυτά τα δύο ορίζονται από τον κατασκευαστή.
+    Οδηγίες για την τιμή που πρέπει να στείλετε σε ποια πόρτα έχουν καταγραφεί για διάφορους emulators \href{https://wiki.osdev.org/Shutdown}{εδώ}.
+    Εξηγήστε τη λειτουργία της συνάρτησης \src{outw} την οποία θα χρησιμοποιήσετε.
+
+    \begin{info}[Σημείωση:]
+        Η συνάρτηση \src{outw} είναι ήδη υλοποιημένη στο xv6 και βρίσκεται στο αρχείο \src{include/x86.h}.
+    \end{info}
 \end{question}
 
 \begin{question}
     Προσθέστε μία κλήση συστήματος η οποία θα επιστρέφει το πόσες φορές έχει εκτελεστεί μία 
     συγκεκριμένη κλήση συστήματος η οποία θα περνιέται σαν όρισμα.
+    Η κλήση που θα φτιάξετε πρέπει να έχει το εξής πρωτότυπο: \src{int getcount(int syscall)}.
 \end{question}
 
 \begin{question}
