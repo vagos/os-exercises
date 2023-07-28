@@ -10,90 +10,13 @@
 %	ASSIGNMENT INFORMATION
 %----------------------------------------------------------------------------------------
 
-\title{Εισαγωγή στο \src{xv6} Kernel} % Title of the assignment
+\title{Εισαγωγή στο \src{xv6} Kernel \& Προσθήκη System Call} % Title of the assignment
 
 \author{\footnotesize Χρήστος Φείδας\\ \footnotesize \src{fidas@upatras.gr} \and \footnotesize Ευάγγελος Λάμπρου\\ \footnotesize \src{e.lamprou@upnet.gr}} % Author name and email address
 
 \date{University of Patras --- \the\year{}} % University, school and/or department name(s) and a date
 
-\usepackage{fancyhdr}
-\usepackage{float}
-\usepackage[main=greek,english]{babel}
-
-%----------------------------------------------------------------------------------------
 \bibliography{bibliography}
-
-\usepackage{adjustbox}
-\usepackage{tikz}
-\usetikzlibrary{trees}
-\usetikzlibrary{fit}
-\usetikzlibrary{shapes}
-\usetikzlibrary{arrows.meta, positioning, shadows}
-\usetikzlibrary{chains,shapes.multipart}
-\usetikzlibrary{external}
-\usetikzlibrary{matrix}
-\usetikzlibrary{shapes.callouts}
-
-\tikzstyle{rect} = [rectangle,fill=white, text centered, draw]
-\tikzstyle{database} = [draw, cylinder, shape border rotate = 90, aspect = 0.2]
-\tikzstyle{thick-arrow} = [->, thick]
-\tikzstyle{arrow} = [thick,->,>=stealth]
-\tikzstyle{arrow-small} = [->,>=stealth]
-\tikzstyle{simple-rect} = [rectangle, text centered, draw = black, inner sep=4mm]
-\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
-\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
-\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=orange!30]
-\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
-\tikzstyle{arrow} = [thick,->,>=stealth]
-\tikzset{
-    dcs/.style = {double copy shadow},
-}
-
-% taken from manual
-\makeatletter
-\pgfdeclareshape{document}{
-\inheritsavedanchors[from=rectangle] % this is nearly a rectangle
-\inheritanchorborder[from=rectangle]
-\inheritanchor[from=rectangle]{center}
-\inheritanchor[from=rectangle]{north}
-\inheritanchor[from=rectangle]{south}
-\inheritanchor[from=rectangle]{west}
-\inheritanchor[from=rectangle]{east}
-% ... and possibly more
-\backgroundpath{% this is new
-% store lower right in xa/ya and upper right in xb/yb
-\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
-\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
-% compute corner of ‘‘flipped page’’
-\pgf@xc=\pgf@xb \advance\pgf@xc by-10pt % this should be a parameter
-\pgf@yc=\pgf@yb \advance\pgf@yc by-10pt
-% construct main path
-\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}}
-\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}}
-\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yb}}
-\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yc}}
-\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}}
-\pgfpathclose
-% add little corner
-\pgfpathmoveto{\pgfpoint{\pgf@xc}{\pgf@yb}}
-\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yc}}
-\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yc}}
-\pgfpathlineto{\pgfpoint{\pgf@xc}{\pgf@yc}}
-}
-}
-\makeatother
-
-\tikzstyle{doc}=[%
-draw,
-thick,
-align=center,
-color=black,
-shape=document,
-minimum width=20mm,
-minimum height=28.2mm,
-shape=document,
-inner sep=2ex,
-]
 
 \begin{document}
 
