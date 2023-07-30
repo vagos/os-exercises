@@ -151,11 +151,21 @@ Debian-based distribution (π.χ. Ubuntu) τότε μπορείτε να προ�
 
 \subsection{Προτεινόμενο Διάβασμα}
 
-Διαβάστε από το βιβλίο του xv6 \cite{xv6Book} το κεφάλαιο 1 (\textit{Operating
-system organisation}) και το κεφάλαιο 3 (\textit{Traps, interrupts, and
-drivers}) μέχρι την ενότητα \textit{Drivers}.
+\begin{itemize}
 
-Δείτε ένα επεξηγηματικό βίντεο για το πώς λειτουργούν οι system calls στο xv6 \href{https://www.youtube.com/watch?v=w7Q66ItKrn8}{εδώ}.
+    \item Διαβάστε από το βιβλίο του xv6 \cite{xv6Book} το κεφάλαιο 1 (\textit{Operating
+          system organisation}) και το κεφάλαιο 3 (\textit{Traps, interrupts, and
+          drivers}) μέχρι την ενότητα \textit{Drivers}.
+    \item Δείτε το επεξηγηματικό \href{https://www.youtube.com/watch?v=RdxHGyeoyqI}{βίντεο} το οποίο εξηγεί πώς καλείται μία system call στο xv6 μέσα από μία εφαρμογή χρήστη.
+    \item Δείτε ένα επεξηγηματικό \href{https://www.youtube.com/watch?v=w7Q66ItKrn8}{βίντεο} για το πώς λειτουργούν οι system calls στο xv6.
+
+\end{itemize}
+
+\begin{info}[Σημείωση]
+    Στα δοθέντα βίντεο, ο κώδικας που παρουσιάζεται από τη RISC-V \href{https://github.com/mit-pdos/xv6-riscv}{έκδοση του xv6}.
+    Η δικιά μας έκδοση είναι για την αρχιτεκτονική x86. Οι διαφορές μεταξύ των δύο εκδόσεων είναι πρακτικά αμελητέες,
+    με μόνες εξαιρέσεις τα σημεία του πηγαίου κώδικα γραμμένα σε \src{assembly} όπως οι ονοματολογίες των καταχωρητών (registers).
+\end{info}
 
 \subsection{Προετοιμασία Συστήματος}
 
@@ -269,6 +279,8 @@ $ make qemu # Run xv6 on qemu
 
 \begin{question}
     Προσθέστε μία κλήση συστήματος η οποία θα τερματίζει μια τυχαία διεργασία.
+
+    Θα χρειαστεί να προσθέσετε μία \href{https://wiki.osdev.org/Random_Number_Generator#Pseudorandom_number_generators}{γεννήτρια τυχαίων αριθμών} στο kernel.
 
     \begin{info}[Σημείωση:]
         Για να σκοτώσετε μία διεργασία δωθέντος ενός συγκεκριμένου PID

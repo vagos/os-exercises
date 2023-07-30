@@ -32,7 +32,7 @@
 
 \usepackage[framemethod=tikz]{mdframed} % Allows defining custom boxed/framed environments
 
-\usepackage{enumitem}
+\usepackage[inline]{enumitem}
 
 \usepackage{listings} % File listings, with syntax highlighting
 
