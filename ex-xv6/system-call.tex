@@ -172,7 +172,7 @@ Debian-based distribution (π.χ. Ubuntu) τότε μπορείτε να προ�
 
 \begin{commandline}
 \begin{verbatim}
-$ sudo apt-get install build-essential gdb git qemu
+$ sudo apt-get install build-essential gdb git qemu qemu-utils qemu-system-x86
 \end{verbatim}
 \end{commandline}
 
@@ -230,7 +230,10 @@ $ make qemu-nox # Run xv6 on qemu without graphical interface
 
 Εξοικοιωθείτε με τις διαθέσιμες λειτουργίες του λειτουργικού. Ο πηγαίος κώδικας κάθε μίας από τις εφαρμογές αυτές βρίσκεται στον φάκελο \src{user}.
 
-Προς το παρών, δεν υπάρχει τρόπος να απενεργοποιήσετε το σύστημά σας μέσα από αυτή τη γραμμή εντολών.
+Προς το παρών, δεν υπάρχει τρόπος να απενεργοποιήσετε το σύστημά σας μέσα από
+αυτή τη γραμμή εντολών. Για να στείλετε σήμα shutdown στο qemu emulator
+μπορείτε να κλείσετε απλά το παράθυρο αν δουλεύετε με γραφική διεπαφή ή να
+χρησιμοποιήσετε το συνδυασμό \src{ctr+a x} αν δουλεύετε σε λειτουργια terminal.
 
 \section{Ασκήσεις}
 
