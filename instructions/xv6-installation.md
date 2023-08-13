@@ -140,6 +140,6 @@ colorlinks: true
 τον qemu emulator μέσα στον οποίο θα φορτώσουμε και θα τρέξουμε το λειτουργικό σύστημα xv6.
 
 ```bash
-$ sudo apt install build-essential git qemu 
+$ sudo apt install build-essential git qemu qemu-utils qemu-system-x86
 ```
 **Μπορείτε να συνέχισετε στην εκφώνηση της πρώτης δραστηριότητας!**
