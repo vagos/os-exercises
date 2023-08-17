@@ -1,3 +1,5 @@
+Exercises for developing Linux Kernel modules and playing with the [xv6 Kernel](https://github.com/vagos/xv6). *(in Greek)*
+
 **Resources**
 
 For beginners who want to get started with Kernel development.
