@@ -145,7 +145,7 @@ $ cd ~/hello-world
 Αποθηκεύστε τον παρακάτω κώδικα σε ένα αρχείο με όνομα \src{hello.c}.
 
 \begin{file}[hello.c]
-    \lstinputlisting[language=C]{../src/hello/hello.c}
+    \lstinputlisting[language=C]{assets/src/hello/hello.c}
 \end{file}
 
 Ο κώδικας που βρίσκεται στη συνάρτηση \src{my\_init} θα εκτελεστεί όταν φορτώσουμε το module μας. 
@@ -166,7 +166,7 @@ $ cd ~/hello-world
 Αποθηκεύστε τον παρακάτω κώδικα σε ένα αρχείο με όνομα \src{Makefile}.
 
 \begin{file}[Makefile]
-    \footnotesize \lstinputlisting[language=C, tabsize=2]{../src/hello/Makefile}
+    \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/hello/Makefile}
 \end{file}
 
 Αυτό το αρχείο ορίζει τις εντολές οι οποίες θα εκτελεστούν για να μεταγλωτιστεί 
@@ -186,7 +186,7 @@ $ cd ~/hello-world
 \begin{verbatim}
 $ ls hello-world
 
-../hello-world
+assets/hello-world
 ├── hello.c
 ├── hello.ko
 ├── hello.mod
@@ -295,7 +295,7 @@ $ journalctl --since "10 minutes ago" | grep kernel
 Για το πώς γίνεται αυτό κοιτάξτε στο αρχείο (\src{linux/include/linux/sched/signal.h} στο macro \src{for\_each\_process}).
 
 \begin{file}[list-processes.c]
-    \footnotesize \lstinputlisting[language=C, tabsize=2]{../src/list-proc/list-proc-basic.c}
+    \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/list-proc/list-proc-basic.c}
 \end{file}
 
 \begin{info}[Σημείωση]
@@ -312,7 +312,7 @@ $ journalctl --since "10 minutes ago" | grep kernel
    Ξεκινήστε δημιουργώντας ένα πρόγραμμα όπως το παρακάτω.
 
     \begin{file}[forking.c]
-        \footnotesize \lstinputlisting[language=C, tabsize=2]{../src/show-children/main.c}
+        \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/show-children/main.c}
     \end{file}
 
     Μεταγλωτίστε και έπειτα εκτελέστε το πρόγραμμα με τις εντολές:

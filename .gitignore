@@ -7,3 +7,14 @@ full
 NOTES.md
 ex-xv6/assets/syscall/drivers.png
 solution.zip
+
+# Code Files
+.cache
+*.cmd
+*.symvers
+*.ko
+*.mod
+*.mod.*
+*.o
+modules.order
+compile_commands.json
