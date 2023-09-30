@@ -1,0 +1,23 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam sequenceMessageAlign center
+
+' left to right direction
+
+node "User Space" {
+[Processes] -r-> "Kernel Space" : System Calls
+}
+
+node "Kernel Space" {
+    [Kernel Core]
+    ' [Device Drivers] <--> Devicessss 
+    ' [Device Drivers] <--> KernelCore
+}
+
+
+/'
+node "Devices" {
+}
+'/
+
+@enduml
