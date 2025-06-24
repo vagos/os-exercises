@@ -1,4 +1,4 @@
-Exercises for developing Linux Kernel modules and playing with the [xv6 Kernel](https://github.com/vagos/xv6). *(in Greek)*
+Exercises for developing Linux Kernel modules and playing with the [xv6 Kernel](https://github.com/vagos/xv6) (in Greek).
 Solution files are encrypted using [git-crypt](https://github.com/AGWA/git-crypt).
 
 **Resources**
