@@ -24,6 +24,9 @@
 
 \usepackage{amsmath,amsfonts,stmaryrd,amssymb} % Math packages
 
+\usepackage{graphicx} % Required for including images
+\usepackage{float} % Required for specifying the exact location of figures
+
 \usepackage{enumerate} % Custom item numbers for enumerations
 
 \usepackage[ruled]{algorithm2e} % Algorithms

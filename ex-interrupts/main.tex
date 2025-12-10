@@ -1,5 +1,5 @@
 %----------------------------------------------------------------------------------------
-%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%   PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
 \documentclass[18pt]{extarticle}
@@ -7,10 +7,10 @@
 \input{structure.cls} % Include the file specifying the document structure and custom commands
 
 %----------------------------------------------------------------------------------------
-%	ASSIGNMENT INFORMATION
+%   ASSIGNMENT INFORMATION
 %----------------------------------------------------------------------------------------
 
-\title{Εργασία Ανάπτυξης Διακοπών (Interrupts) \\Λειτουργικά Συστήματα (ECE ΓΚ702)} % Title of the assignment
+\title{Υλοποίηση Διακοπών Λειτουργικού συστήματος (Interrupts) \\Λειτουργικά Συστήματα (ECE ΓΚ702)} % Title of the assignment
 
 \author{
     \footnotesize Χρήστος Φείδας\\ 
@@ -41,7 +41,7 @@
 \maketitle
 
 %----------------------------------------------------------------------------------------
-%	INTRODUCTION
+%   INTRODUCTION
 %----------------------------------------------------------------------------------------
 
 \section{Εισαγωγή}
@@ -49,13 +49,13 @@
 Η εργασία αυτή κάνει μία εισαγωγή στην υλοποίηση των Interrupts και του Interrupt Descriptor Table
 για το open source εκπαιδευτικό λειτουργικό σύστημα Skyl-OS.
 
-Μπορείτε να βρείτε το συνοδευτικό βιβλία του Skyl-OS \href{https://github.com/Billyzeim/Skyl-OS/blob/main/docs/book/main.pdf}{εδώ}.
+Μπορείτε να βρείτε το συνοδευτικό βιβλίο του Skyl-OS \href{https://github.com/Billyzeim/Skyl-OS/blob/main/docs/book/main.pdf}{εδώ}.
 
-\subsection{Ο πηγαίος κώδικας του Linux kernel.}
+\subsection{Ο πηγαίος κώδικας του Skyl-OS kernel.}
 
 Ο πηγαίος κώδικας του SKyl-OS είναι διαθέσιμος ελεύθερα. 
 Κάποιος μπορεί να κατεβάσει τον κώδικα, να τον επεξεργαστεί και να δημιουργήσει δικές του εκδόσεις του SKyl-OS.
-Στα πλαίσια των εργασιών θα ζητηθεί να τροποποιείσετε κομμάτια του πηρύνα του Skyl-OS.
+Στα πλαίσια των εργασιών θα ζητηθεί να τροποποιήσετε κομμάτια του πυρήνα του Skyl-OS.
 
 Για να εξερευνήσετε τον πηγαίο κώδικα του Skyl-OS μπορείτε να κάνετε λήψη του κώδικα 
 από το \href{https://github.com/Billyzeim/Skyl-OS/blob/main/}{GitHub repo} και χρήση του αγαπημένου σας editor 
@@ -65,11 +65,11 @@
 
 Ο πυρήνας (kernel) του Skyl-OS, όπως των Linux, είναι μονολιθικός, πράγμα που σημαίνει πως αν κάποιος θέλει να 
 προσθέσει νέα λειτουργικότητα σε αυτόν πρέπει να επεξεργαστεί τον πηγαίο κώδικα, 
-να τον επαναμεταγλωτίσει (recompile) και να κάνει επανεκκίνηση το σύστημά του ώστε να δει τις αλλαγές του.
+να τον επαναμεταγλωττίσει (recompile) και να κάνει επανεκκίνηση το σύστημά του ώστε να δει τις αλλαγές του.
 
 Σε αντίθεση, όμως, με τα Linux, το Skyl-OS είναι μικρό λειτουργικό σύστημα, ώστε να προσφέρεται για εκπαιδευτικές δραστηριότητες.
 Για αυτό τον λόγο, το Skyl-OS δεν λειτουργεί με modules. Συνεπώς, πρέπει να ακολουθήσουμε τις οδηγίες, ώστε να κάνουμε compile 
-τον πηρύνα του λειτουργικού. 
+τον πυρήνα του λειτουργικού. 
 
 \begin{warn}[Προσοχή]
     Τα εργαλεία που χρησιμοποιούμε για να κάνουμε compile το Skyl-OS είναι γραμμένα για Linux. Προτείνεται η υλοποίηση όσων
@@ -89,10 +89,17 @@
 
 \subsubsection{Hardware Interrupts}
 
-Τα Hardware Interrupts προέρχονται από εξωτερικές συσκευές (περιφεριακές), όπως το πληκρολόγιο, το ποντίκι, σκληροί δίσκοι ή κάρτες δικτύου.
-Αυτά στέλνουν Interrupt Requests (IRQs), δηλαδή σήματα τα οποία προσδιορίζουν ποίος είναι ο στόχος του Interrupt. Για παράδειγμα, κάθε φορά
-που ένα πλήκρο πατιέται αυτό στέλνει ένα IRQ με συγκεκριμένη κωδικοποίηση σε στον επεξεργαστή (Στην πραγματικότητα μέσω του PIC για το οποίο
-μπορείτε να διαβάσετε περισσότερα εδώ). Έπειτα, είναι δουλειά του λειτουργικού συστήματος να αναγνωρίσει αυτό το σήμα και να πράξει αναλόγως.
+Τα Hardware Interrupts προέρχονται από εξωτερικές συσκευές (περιφερειακές), όπως το πληκρολόγιο, το ποντίκι, σκληροί δίσκοι ή κάρτες δικτύου.
+Αυτά στέλνουν Interrupt Requests (IRQs), δηλαδή σήματα τα οποία προσδιορίζουν ποιος είναι ο στόχος του Interrupt. Για παράδειγμα, κάθε φορά
+που ένα πλήκτρο πατιέται αυτό στέλνει ένα IRQ με συγκεκριμένη κωδικοποίηση στον επεξεργαστή (στην πραγματικότητα μέσω του PIC για το οποίο
+μπορείτε να διαβάσετε περισσότερα \href{https://wiki.osdev.org/8259_PIC}{εδώ}). Έπειτα, αυτό το σήμα μεταφράζεται από το PIC σε ένα interrupt vector. Τέλος, είναι δουλειά του 
+λειτουργικού συστήματος να αντιστοιχίσει το interrupt vector σε κάποιο ISR.
+
+Στην x86 αρχιτεκτονική, μάλιστα, υπάρχουν κάποια προβλήματα τα οποία έχουν δημιουργηθεί από τη συνεργασία της IBM και της Intel. Όταν η IBM
+έφτιαξε τους πρώτους υπολογιστές οι οποίοι έτρεχαν σε Real Mode, έφτιαξε το PIC ώστε τα IRQs 0-7 να αντιστοιχίζονται στα interrupt vectors
+0x08-0x0F. Αργότερα, όταν η Intel χρησιμοποίησε το ίδιο υλικό για υπολογιστές σε Protected Mode, δέσμευσε τα vectors 0x00-0x1F για CPU 
+Exceptions. Για να λύσουμε αυτό το πρόβλημα πρέπει να κάνουμε επαναχαρτογράφηση του PIC, ώστε τα IRQs 0-7 να αντιστοιχίζονται στα vectors
+0x20 και μετά.
 
 Τα Hardware Interrupts χωρίζονται και αυτά με τη σειρά τους σε Maskable και Non-Maskable. Τα πρώτα μπορούν να απενεργοποιηθούν, ή να αγνοηθούν,
 προκειμένου να μή διακόψουν διεργασίες υψηλότερης προτεραιότητας, ενώ τα δεύτερα σημαίνουν ότι έχει συμβεί κάτι καταστροφικό (π.χ. πρόβλημα με
@@ -104,21 +111,21 @@
 exceptions (π.χ. πρόσβαση σε απαγορευμένη μνήμη).
 
 Για να προκαλέσει ένα πρόγραμμα κάποιο Interrupt, πρέπει να κάνει μία κλήση στο λειτουργικό σύστημα (System Call), ώστε να ζητήσει κάποια 
-υπηρεσία του συστήματος (π.χ. είσοδο/έξοδο, δέσμευση μνήμης). Οι κλήσης λειτουργικών συστημάτων θα καλυφθούν σε μετέπειτα κεφάλαια. 
+υπηρεσία του συστήματος (π.χ. είσοδο/έξοδο, δέσμευση μνήμης). Οι κλήσεις λειτουργικών συστημάτων θα καλυφθούν σε μετέπειτα κεφάλαια. 
 
 Εκτός, από προγραμματισμένα Interrupts, όμως, μπορεί να προκύψει και κάποιο πρόβλημα (exception) κατά την εκτέλεση κάποιου προγράμματος,
 το οποίο δεν είναι αναμενόμενο. Για παράδειγμα, κάποιο πρόγραμμα μπορεί να προσπαθήσει να διαβάσει μνήμη η οποία δεν του ανήκει. Σε τέτοιες
-περιπτώσει ενεργοποιούνται συγκεκριμένα Interrupts αυτόματα από τον επεξεργαστή και το λειτουργικό μας σύστημα πρέπει να έχει μεριμνήσει, ώστε
+περιπτώσεις ενεργοποιούνται συγκεκριμένα Interrupts αυτόματα από τον επεξεργαστή και το λειτουργικό μας σύστημα πρέπει να έχει μεριμνήσει, ώστε
 να τα διαχειρίζεται σωστά.
 
 \subsection{Πώς διαχειριζόμαστε τα Interrups}
 
 Αρχικά, ο επεξεργαστής αναγνωρίζει ένα σήμα Interrupt. Μόλις γίνει αυτό ξεκινάει μία διαδικασία η οποία ονομάζεται context switching.
-Στο contect switching το λειτουργικό σύστημα πρέπει να αποθηκεύσει την τρέχουσα κατάσταση του επεξεργαστή, δηλαδή όλες τις τιμές των
+Στο context switching το λειτουργικό σύστημα πρέπει να αποθηκεύσει την τρέχουσα κατάσταση του επεξεργαστή, δηλαδή όλες τις τιμές των
 register του και του Program Counter, συνήθως κάνοντας τες push στο stack.
 
 Έπειτα, ο επεξεργαστής πρέπει να ξεκινήσει να εκτελεί μία ρουτίνα, ώστε να εξυπηρετήσει το Interrupts. Αυτές οι ρουτίνες ονομάζονται
-Interrupt Service Routines (ISR). Για να γίνει η αντιστοίχιση του IRQ στο σωστό ISR, κάθε σήμα Interrup έχει και ένα vector το οποίο
+Interrupt Service Routines (ISR). Για να γίνει η αντιστοίχιση του IRQ στο σωστό ISR, κάθε σήμα Interrupt έχει και ένα vector το οποίο
 προσδιορίζει ποιά ρουτίνα πρέπει να κληθεί. Αυτή η αντιστοίχιση γίνεται μέσω ενός πίνακα, του Interrupt Vector Table (IVT) ή Interrupt
 Descriptor Table (IDT). Ο επεξεργαστής έτσι μεταφέρει την εκτέλεση στο ISR και εξυπηρετεί το IRQ. 
 
@@ -128,295 +135,339 @@ Descriptor Table (IDT). Ο επεξεργαστής έτσι μεταφέρει 
 
 \subsection{Interrupt Descriptor Table}
 
-// TODO
+Όπως αναφέρθηκε και νωρίτερα, το IDT είναι ένας πίνακας που χρησιμοποιεί ο x86 επεξεργαστής, για να συνδέει κάθε IRQ με το αντίστοιχο
+ISR του.
+
+\subsubsection{Δομή του IDT}
+
+Ο πίνακας αυτός έχει 256 εισαγωγές, κάθε μία εκ των οποίων έχει ένα interrupt vector number από το 0 έως και το 255. Κάθε εισαγωγή του
+πίνακα (Gate Descriptor) κρατάει τις εξής πληροφορίες: τον segment selector που δείχνει σε ποιό code segment βρίσκεται ISR, το offset, 
+δηλαδή τη θέση του ISR μέσα στο code segment, το ελάχιστα δικαιώματα που πρέπει να έχει ένα πρόγραμμα για να εκτελεστεί το ISR (Descriptor
+Privilege Level ή DPL), και το είδος του gate, δηλάδή αν είναι hardware interrupt ή software interrupt. Περιέχει,
+δηλαδή, τις απαραίτητες πληροφορίες για να εκτελεστούν ρουτίνες υψηλών privileges μέσω κώδικα χαμηλών privileges.
+
+Το IDT μπορεί να έχει διαφορετικό μέγεθος ανάλογα με το πλήθος των interrupts που περιέχει και μπορεί να βρίσκεται οπουδήποτε στη φυσική
+μνήμη. Για να έχει πρόσβαση ο επεξεργαστής σε αυτό πρέπει το λειτουργικό σύστημα να προσδιορίσει που βρίσκεται το IDT. Για να το κάνει
+αυτό χρησιμοποιεί ένα 48-bit register του επεξεργαστή το IDT Register. Μέσα σε αυτό βρίσκεται η διεύθυνση στην οποία αρχίζει το IDT και
+το όριο του.
+
+\begin{figure}[H]
+    \centering
+    \begin{tabular}{|c|c|l|l|}
+        \hline
+        \textbf{Vector} & \textbf{Type} & \textbf{Description} & \textbf{Handler Function} \\
+        \hline
+        \texttt{0x00} & Exception & Divide by Zero & \texttt{isr\_32} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x01} & Exception & Breakpoint & \texttt{isr\_3} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x0E} & Exception & Page Fault & \texttt{isr\_14} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x20} & IRQ 0 & Timer (PIT) & \texttt{isr\_0} \\
+        \hline
+        \texttt{0x21} & IRQ 1 & \textbf{Keyboard} & \texttt{isr\_1} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+    \end{tabular}
+    \caption{Η χαρτογράφηση του IDT στο Skyl-OS. Οι πρώτες 32 θέσεις είναι δεσμευμένες από την Intel (Exceptions), ενώ οι θέσεις 0x20-0x2F χρησιμοποιούνται από τον επαναχαρτογραφημένο PIC.}
+    \label{fig:idt_map}
+\end{figure}
+
+\subsubsection{Λειτουργία του IDT}
+
+Όταν ο επεξεργαστής λαμβάνει ένα σήμα interrupt ανατρέχει στο IDT ώστε να προσδιορίσει τη θέση στη μνήμη του ISR. Το σήμα που λαμβάνει
+περιέχει και το vector number του interrupt. Χρησιμοποιώντας τον παρακάτω υπολογισμό ο επεξεργαστής μπορεί να προσδιορίσει τη θέση του
+ISR: $$\text{ISR Address} = \text{IDTR.Base} + (\text{Vector Number} \times \text{Descriptor Size})$$
+
+Έπειτα, ο επεξεργαστής ελέγχει ότι το τρέχον privilege level είναι μεγαλύτερο ή ίσο του DPL του gate και μεταφέρει την εκτέλεση στο ISR.
+Αν το gate δείχνει ότι είναι hardware interrupt ο επεξεργαστής αυτόματα μηδενίζει το IF, ώστε να απενεργοποιήσει τα maskable interrupts.
+Αν το gate δείχνει ότι είναι software interrupt ο επεξεργαστής αφήνει το IF ενεργό, αφήνοντας άλλα interrupts να καλούνται, καθώς τα
+software interrupts μπορεί να είναι χρονοβόρα. Έτσι, εξασφαλίζεται ότι το σύστημα εξυπηρετεί όλες τις ανάγκες των interrupts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Interrupt_Figure.png}
+    \caption{Interrupt Handling Flow Visual}
+    \label{fig:int_handling}
+\end{figure}
 
 \subsection{Προετοιμασία περιβάλλοντος ανάπτυξης.}
 
-Ένα kernel module έχει άμεση πρόσβαση στο υλικό του συστήματος.
-Αυτό σημαίνει πως υπάρχει η δυνατότητα να φέρει το σύστημα σε κατάσταση που χρειάζεται η επανεκκίνσή του.
-Για αυτό το λόγο προτείνεται να δουλέψετε σε κάποιο εικονικό μηχάνημα (virtual machine) ώστε να αποφύγετε το ρίσκο βλάβης στο σύστημά σας.
+Όπως αναφέρθηκε νωρίτερα το περιβάλλον στο οποίο γίνεται η ανάπτυξη του Skyl-OS είναι Debian Linux. Αν το κύριο λειτουργικό σας σύστημα δεν
+είναι Debian Linux προτείνεται να δουλέψετε σε κάποιο εικονικό μηχάνημα (virtual machine), ώστε να μπορείτε να εγκαταστήσετε να απαραίτητα
+εργαλεία.
 
-Για να έχετε ένα εικονονικό μηχάνημα μπορείτε να χρησιμοποιήσετε το δωρεάν λογισμικό \href{https://www.virtualbox.org/}{Virtual Box}
+Για να έχετε ένα εικονικό μηχάνημα μπορείτε να χρησιμοποιήσετε το δωρεάν λογισμικό \href{https://www.virtualbox.org/}{Virtual Box}
 Από εκεί, μπορείτε να δημιουργήσετε ένα εικονικό μηχάνημα χρησιμοποιώντας οποιαδήποτε διανομή των Linux επιθυμείτε.  
-Διαφοροποιήσεις μεταξύ διανομών θα υπάρχουν μόνο στη διαδικασία απόκτησης των απαραίτητων πακέτων για την ανάπτυξη του κώδικα του module.
-
-Για να είναι η ανάπτυξη του κώδικα γρηγορότερη, χρήσιμο θα ήταν να χρησιμοποιήσετε τη δυνατότητα "shared folder" του Virtual Box,
-έτσι ώστε να γίνεται η συγγραφή του κώδικα στο κανονικό σας σύστημα και έπειτα η μεταγλώττιση και φόρτωση των modules στο εικονικό μηχάνημα.
-Οδηγίες για αυτό μπορείτε να βρείτε \href{https://www.virtualbox.org/manual/ch04.html#sharedfolders}{εδώ} και \href{https://carleton.ca/scs/tech-support/troubleshooting-guides/creating-a-shared-folder-in-virtualbox/}{εδώ}.
-Εναλλακτικά μπορείτε να κάνετε ακόμα και τη συγγραφή του κώδικα στο εικονικό σας μηχάνημα εγκαθιστώντας σε αυτό κάποιον επεξεργαστή κειμένου.
+Διαφοροποιήσεις μεταξύ διανομών θα υπάρχουν μόνο στη διαδικασία απόκτησης των απαραίτητων πακέτων για την ανάπτυξη του κώδικα, όμως,
+σε αυτό τον οδηγό δίνονται τα πακέτα για Debian Linux.
 
 \subsubsection{Απαραίτητα Πακέτα}
 
-Θα χρειαστεί να υπάρχουν στο σύστημά σας ορισμένα πακέτα και τα σχετικά header files:
+Θα χρειαστεί να υπάρχουν στο σύστημά σας ορισμένα πακέτα:
 
 Για διανομές βασισμένες στα Debian:
 
 \begin{commandline}
-	\begin{verbatim}
+    \begin{verbatim}
 $ sudo apt-get update
-
-$ sudo apt-get install build-essential kmod
-$ sudo apt-get install linux-headers-`uname -r`
-	\end{verbatim}
+$ sudo apt install build-essential nasm qemu-system-x86
+    \end{verbatim}
 \end{commandline}
 
+\subsubsection{Λήψη του πηγαίου κώδικα}
 
-Για διανομές βασισμένες στα Arch:
+Ο πηγαίος κώδικας του Skyl-OS βρίσκεται στο GitHub. Για να τον επεξεργαστείτε πρέπει πρώτα να τον κάνετε clone από το repository στο
+μηχάνημά σας και να αλλάξετε στο branch idt-lab στο οποίο υπάρχει ο κώδικας της άσκησης.
 
 \begin{commandline}
-	\begin{verbatim}
-$ sudo pacman -S gcc kmod
-$ sudo pacman -S linux-headers
-	\end{verbatim}
+    \begin{verbatim}
+$ git clone https://github.com/Billyzeim/Skyl-OS.git
+$ git checkout idt-lab
+    \end{verbatim}
 \end{commandline}
-
-\subsection{Ένα Παράδειγμα}
-
-Για αρχή, στο σύστημά σας ανοίξτε ένα τερματικό (terminal).
-Εκτελέστε την εντολή \src{su} και πληκτρολογήστε το root password ώστε να εκτελέσετε όλες τις υπόλοιπες εντολές ως διαχειριστής (root). 
-Πολλές από τις εντολές διαχείρισης modules πρέπει να εκτελούνται με δικαιώματα root.
-
-Μπορείτε να δείτε τα modules που είναι τώρα φορτωμένα στο σύστημά σας με την
-εντολή \src{sudo lsmod}.
-
-Φτιάξτε ένα φάκελο.
-Εκεί θα βρίσκονται όλα τα αρχεία που θα αφορούν το module που θα φτιάξουμε.
-
-\begin{commandline}
-	\begin{verbatim}
-$ mkdir ~/hello-world
-$ cd ~/hello-world
-	\end{verbatim}
-\end{commandline}
-
-\subsubsection{Kernel Module - Hello World}
-
-Αποθηκεύστε τον παρακάτω κώδικα σε ένα αρχείο με όνομα \src{hello.c}.
-
-\begin{file}[hello.c]
-    \lstinputlisting[language=C]{assets/src/hello/hello.c}
-\end{file}
-
-Ο κώδικας που βρίσκεται στη συνάρτηση \src{my\_init} θα εκτελεστεί όταν φορτώσουμε το module μας. 
-Εδώ γίνονται τυχόν αρχικοποιήσεις πόρων που θα χρειαστεί το module. 
-Επιστρέφει έναν ακέραιο ανάλογα με τον αν ήταν επιτυχής ή όχι η αρχικοποίηση του module.
-Ο κώδικας που βρίσκεται στη συνάρτηση \src{my\_exit} θα εκτελεστεί όταν αποφορτώσουμε το module μας. 
-Εδώ θα πρέπει το module μας να επιστρέψει πίσω στο σύστημα τυχόν πόρους που έχει δεσμεύσει.
-
-Οι μακροεντολές (macros) \src{module\_init} και \src{module\_exit} ορίζουν τις συναρτήσεις μας ως συναρτήσεις "εκίννησης" και "εξόδου" για το τελικό kernel object.
-
-Οι μακροεντολές \src{MODULE\_DESCRIPTION}, \src{MODULE\_AUTHOR} και \src{MODULE\_LICENSE} ορίζουν metadata για το module μας.
-
-Παρατηρήστε τη χρήση της συνάρτησης \src{printk} έναντι κάτι όπως \src{printf}.
-Όταν αναπτύσετε κώδικα σε kernel space, δεν έχετε διαθέσιμη τη βασική βιβλιοθήκη της C. 
-Έχετε διαθέσιμα μόνο σύμβολα τα οποία έχουν οριστεί από τον πυρήνα.
-Για να δείτε τα σύμβολα που είναι ορισμένα από τον πυρήνα στο σύστημά σας εκτελέστε την εντολή \src{cat /proc/kallsyms}.
-
-Αποθηκεύστε τον παρακάτω κώδικα σε ένα αρχείο με όνομα \src{Makefile}.
-
-\begin{file}[Makefile]
-    \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/hello/Makefile}
-\end{file}
-
-Αυτό το αρχείο ορίζει τις εντολές οι οποίες θα εκτελεστούν για να μεταγλωτιστεί 
-το module που φτιάχνουμε.
-
-\begin{info}[Σημείωση:]
-Στο αρχείο \src{Makefile} (και σε όλα τα \src{makefiles} γενικότερα) πρέπει κάτω από το όνομα του κάθε κανόνα (\src{all, clean}) να υπάρχει χαρακτήρας \src{<TAB>}.
-Αυτό είναι παρόμοιο με τον τρόπο που η γλώσσα Python χειρίζεται τις block δομές της.
-\end{info}
-
-Για να μεταγλωτίσετε το module, στον φάκελο που έχετε όλα τα αρχείο εκτελέστε την εντολή \src{make}.
-Για να σβήσετε τα αρχεία που δημιουργούνται από τη μεταγλώτισση μπορείτε να χρησιμοποιήσετε την εντολή \src{make clean}.
-
-Ο φάκελός σας πρέπει τώρα να περιέχει τα παρακάτω αρχεία:
-
-\begin{commandline}
-\begin{verbatim}
-$ ls hello-world
-
-assets/hello-world
-├── hello.c
-├── hello.ko
-├── hello.mod
-├── hello.mod.c
-├── hello.mod.o
-├── hello.o
-├── Makefile
-├── modules.order
-└── Module.symvers
-\end{verbatim}
-\end{commandline}
-
-
-Από αυτά, το αρχείο \src{hello.ko} είναι το τελικό kernel object το οποίο και θα φορτώσουμε στον 
-πυρήνα του συστήματός μας. 
-
-Μπορείτε να δείτε μερικές πληροφορίες για το module με την εντολή: 
-\begin{commandline}
-\begin{verbatim}
-$ modinfo hello.ko
-\end{verbatim}
-\end{commandline}
-
-% Δοκιμάστε να τρέξετε την παρακάτω εντολή ώστε να επιβεβαιώσετε πως το module μας δεν είναι ακόμα φορτωμένο στον πυρήνα:
-% 
-% \begin{commandline}
-% \begin{verbatim}
-% $ sudo lsmod | grep hello
-% \end{verbatim}
-% \end{commandline}
-
-Μπορούμε πλέον να \textbf{φορτώσουμε} το module στο σύστημά μας με την εντολή:
-
-\begin{commandline}
-\begin{verbatim}
-$ sudo insmod hello.ko
-\end{verbatim}
-\end{commandline}
-
-Τώρα θα δείτε το module μας στη λίστα με τα modules του συστήματος αν εκτελέσουμε:
-
-\begin{commandline}
-\begin{verbatim}
-$ sudo lsmod | grep hello
-\end{verbatim}
-\end{commandline}
-
-Για να \textbf{αφαιρέσουμε} το module μας εκτελούμε την εντολή:
-
-
-\begin{commandline}
-\begin{verbatim}
-$ sudo rmmod hello
-\end{verbatim}
-\end{commandline}
-
-Τώρα αν ελέγξουμε τα logs του συστήματος με την εντολή: 
-
-\begin{commandline}
-\begin{verbatim}
-$ journalctl --since "10 minutes ago" | grep kernel
-\end{verbatim}
-\end{commandline}
-
-Μπορούμε να δούμε τα μηνύματα που είχαμε προσθέσει στις 
-συναρτήσεις \src{my\_init} και \src{my\_exit}
-
-Το module μας δεν έχει δυνατότητα εκτύπωσης μυνημάτων σε γραφική κονσόλα (υπάρχει βέβαια δυνατότητα εξόδου σε κονσόλα τύπου tty). 
-Για αυτό πρέπει να βλέπουμε τα μυνήματα από τα logs του συστήματος.
-
-\section{Ασκήσεις}
-
-\begin{question}
-Τροποποιήστε το αρχικό module που φτιάξαμε ώστε να τυπώνει ένα διαφορετικό μήνυμα. \\
-Ακολουθήστε την ίδια διαδικασία για την φόρτωση/εκφόρτωσή του.                                                                                                               
-
-% Δοκιμάστε να γράψετε σε μία διεύθυνση που δεν σας ανήκει ή βάλτε στην συνάρτηση εκκίνησης του module ένα ατέρμονο loop.
-% Θα παρατηρήσετε πως ο πυρήνας είναι ανθεκτικός σε μερικά σφάλματα τα οποία θα οδηγούσαν σε crash ένα πρόγραμμα που εκτελείται σε user space. 
-\end{question}
-
-\begin{info}[Σημείωση:]
-Μήν βασιστείτε σε απλή αντιγραφή-επικόλληση του κώδικα.                                                                        
-Προσπαθήστε να γράψετε μόνοι σας από την αρχή το πρόγραμμα γραμμή-γραμμή ώστε να γίνει κατανοητή η δομή του.                                 
-\end{info}
-
-\begin{question}
-Πηγαίνετε στον πηγαίο κώδικα του Linux kernel και διαβάστε τον ορισμό για το \src{task\_struct} (στο αρχείο \src{linux/include/linux/sched.h}.
-Τί πληροφορίες αποθηκεύονται σε αυτή τη δομή; Τί αντιπροσωπεύει;
-
-\begin{info}[Σημείωση:]
-    Για μια λεπτομερή παρουσίαση της δομής \src{task\_struct} και του διαχειρισμού διεργασιών 
-    στο Linux Kernel μπορείτε να βρείτε στο βιβλίο \href{https://www.doc-developpement-durable.org/file/Projets-informatiques/cours-&-manuels-informatiques/Linux/Linux\%20Kernel\%20Development,\%203rd\%20Edition.pdf}{Linux Kernel Development}
-    (Κεφάλαιο 3).
-\end{info}
-\end{question}
-
-\begin{question}
-Γράψτε ένα module πυρήνα το οποίο Θα τυπώνει πληροφορίες για όλες τις υπάρχουσες διεργασίες όταν φορτώνεται.
-Για να πάρουμε έναν δείκτη προς την διεργασία που εκτελείται αυτή τη στιγμή μπορούμε να χρησιμοποιήσουμε
-το macro \src{current}. Μπορείτε να βρείτε τον ορισμό του macro αυτού μέσα στο αρχείο \src{linux/arch/x86/include/asm/current.h}.
-
-Ξεκινήστε με τον παρακάτω κώδικα σαν βάση.
-
-Κάντε τις κατάλληλες προσθήκες στη συνάρτηση \src{my\_proc\_init} (σημείο \src{TODO}) ώστε να τυπωθούν οι αντίστοιχες πληροφορίες για όλες τις διεργασίες του συστήματος. 
-
-Για το πώς γίνεται αυτό κοιτάξτε στο αρχείο (\src{linux/include/linux/sched/signal.h} στο macro \src{for\_each\_process}).
-
-\begin{file}[list-processes.c]
-    \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/list-proc/list-proc-basic.c}
-\end{file}
 
 \begin{info}[Σημείωση]
-Θα πρέπει για το νέο module να φτιάξετε νέο φάκελο και εκεί
-να τοποθετήσετε τον πηγαίο κώδικα (.c αρχείο) και το \src{Makefile} κάνοντας κατάλληλη αλλαγή σε αυτό. 
-Η διαδικασία μεταγλώττισης θα είναι ίδια όπως με το πρώτο module που φτιάξατε.
+    Το branch idt-lab έχει φτιαχτεί για διδακτικούς σκοπούς και εσκεμμένα έχει κάποια errors. Στις παρακάτω δραστηριότητες θα κληθείτε
+    να φτιάξετε τα εν λόγω errors.
 \end{info}
+
+\subsubsection{Compilation και εκτέλεση}
+
+Για να κάνετε compile και να τρέξετε το Skyl-OS στο qemu virtual machine χρησιμοποιήστε την παρακάτω εντολή:
+
+\begin{commandline}
+    \begin{verbatim}
+$ make run
+    \end{verbatim}
+\end{commandline}
+
+\section{Υλοποίηση IDT στο Skyl-OS}
+
+Σε αυτή την ενότητα θα εργαστούμε πάνω στον κώδικα του Skyl-OS για την αρχικοποίηση του Interrupt Descriptor Table (IDT).
+
+\begin{question}    
+    Στόχος της άσκησης είναι η κατανόηση της δομής μιας IDT entry (gate descriptor) και του τρόπου με τον οποίο ο x86 επεξεργαστής 
+    μεταβαίνει από κανονική εκτέλεση σε έναν interrupt handler. Επίσης, θα δούμε πως οι αρχιτεκτονικές αποφάσεις τον μηχανικών εισάγουν 
+    περιορισμούς στα συστήματά μας τους οποίους καλούμαστε να ξεπεράσουμε.
+
+    Μελετήστε το αρχείο \src{idt\_implementation.c}. Εστιάστε στη συνάρτηση \src{helper} και στα κενά που πρέπει να συμπληρωθούν στην \src{idt\_init}.
+
+    \begin{file}[idt\_implementation.c (Snippet)]
+    \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+void helper(uint8_t num, uint32_t base, 
+        uint16_t sel, uint8_t flags) {
+    idt_entries[num].base_low  = base & 0xFFFF;
+    idt_entries[num].base_high = (base >> 16) & 0xFFFF;
+    idt_entries[num].sel       = sel;
+    idt_entries[num].flags     = flags;
+    // ...
+}
+    \end{lstlisting}
+    \end{file}
+
+    \begin{file}[idt\_implementation.c (Snippet)]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+helper(0, (uint32_t) _________, 0x08, 0x8E);
+    \end{lstlisting}
+    \end{file}
+
+    \begin{file}[idt.h (Snippet)]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+// 1. The IDT Entry Structure
+struct idt_entry_struct {
+    uint16_t base_low; // The lower 16 bits of
+                       // the address to jump to
+    uint16_t sel; // Kernel segment selector
+    uint8_t  always0; // This must always be 0
+    uint8_t  flags; // More flags (Present, DPL, etc)
+    uint16_t base_high; // The upper 16 bits of the 
+                        // address to jump to
+} __attribute__((packed));
+    \end{lstlisting}
+    \end{file}
+
+    \textbf{Ζητούμενα:}
+    
+    \begin{enumerate}
+        \item Αναλύστε τη δομή μιας IDT entry (gate descriptor) από το αρχείο \src{idt.h}.
+        \begin{enumerate}
+            \item Τι αναπαριστά κάθε πεδίο της δομής;
+            \item Γιατί η διεύθυνση του ISR (\src{base}) χωρίζεται σε base\_low και \src{base\_high};
+            \item Γιατί το πεδίο \src{always0} πρέπει να είναι μηδέν; Τι θα συμβεί αν δεν είναι;
+            \item Τι πληροφορία περιέχει το πεδίο flags; Ποια bits καθορίζουν:
+            \begin{enumerate}
+                \item αν το interrupt είναι ενεργό;
+                \item το privilege level;
+                \item τον τύπο του gate;
+            \end{enumerate}
+        \end{enumerate}
+        \item Ποιός είναι ο ρόλος της συνάρτησης \src{helper}; Σε τι χρησιμεύει; Δώστε της ένα περιγραφικό όνομα.
+        \item Συμπληρώστε τα κενά (\_\_\_\_\_\_\_\_) στον κώδικα ώστε να οριστούν οι handlers για Division by Zero, Page Fault και Breakpoint. Δείτε το αρχείο idt.asm για βοήθεια στις ονομασίες.
+        \item Γιατί είναι κρίσιμο να απενεργοποιήσουμε τα interrupts (\src{cli}) στην αρχή; Τι θα συμβεί αν ο Timer (IRQ0) στείλει σήμα πριν φορτωθεί το IDT;
+        \item Τι είναι ο PIC και γιατί πρέπει να τον επαναχαρτογραφήσουμε (remap) στις διευθύνσεις \src{0x20 - 0x2F}; 
+    \end{enumerate}
 
 \end{question}
 
 \begin{question}
-   Στην άσκηση αυτή σας ζητείται να φτιάξετε ένα kernel module το οποίο θα τυπώνει πληροφορίες για μία διεργασία και τις θυγατρικές τις διεργασίες.
-   
-   Ξεκινήστε δημιουργώντας ένα πρόγραμμα όπως το παρακάτω.
+    Ένα κρίσιμο κομμάτι της διαχείρισης διακοπών είναι η σωστή διαχείριση της στοίβας (stack). Όταν συμβαίνει μια διακοπή, 
+    ο επεξεργαστής και ο assembly wrapper σπρώχνουν τιμές στη στοίβα που περιγράφουν την κατάσταση του συστήματος.
 
-    \begin{file}[forking.c]
-        \footnotesize \lstinputlisting[language=C, tabsize=2]{assets/src/show-children/main.c}
+    Παρακάτω δίνεται ο κώδικας για τον χειριστή του Breakpoint Exception (INT 3) στο αρχείο \src{isrs.c} και το assembly stub με το οποίο
+    καλείται η ρουτίνα isr\_3.
+
+    \begin{file}[isr\_3.c]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+#include <stdint.h>
+#include <terminal_io.h>
+#include <isrs.h>
+
+typedef struct {
+    // Pushed by pushad
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; 
+    // Pushed by CPU
+    uint32_t eip, cs, eflags;                        
+} registers_t;
+
+void isr_3(registers_t *regs) {
+    printf("\n=== DEBUG BREAKPOINT ===\n");
+    kprint("EAX: "); printf("%x\n", regs->eax);
+    kprint(" EBX: "); printf("%x\n", regs->ebx);
+    kprint(" EIP: "); printf("%x\n", regs->eip);
+    kprint("System Halted for inspection.\n");
+    printf("=== DEBUG BREAKPOINT END ===\n");
+}
+        \end{lstlisting}
+    \end{file}
+    
+    \begin{file}[idt.asm]
+        \footnotesize \begin{lstlisting}[language={[x86masm]Assembler}, tabsize=2]
+isr_3_asm:
+    pushad
+    push esp ; This passes a pointer
+    ; for the regs structure
+    call isr_3  ; calls void isr_3
+    add esp, 4 ; Clean up the stack
+    popad ; Now loads from stack
+    iret
+        \end{lstlisting}
     \end{file}
 
-    Μεταγλωτίστε και έπειτα εκτελέστε το πρόγραμμα με τις εντολές:
-
-   \begin{commandline}
-       \begin{verbatim}
-   $ gcc forking.c -o forking
-   $ ./forking
-       \end{verbatim}
-   \end{commandline}
-
-    Αυτό το πρόγραμμα ανά \src{SLEEP\_TIME} δευτερόλεπτα εκτελεί την κλήση συστήματος (\href{https://man7.org/linux/man-pages/man2/syscalls.2.html}{system call}) \src{fork}.
-    Ζητείται μέσα από το kernel που θα γράψετε να βρείτε τη δομή \src{task\_struct} που αντιστοιχεί 
-    σε αυτή τη διεργασία με βάση το \src{PID} της και έπειτα να τυπώσετε το \src{PID} καθεμίας από τις διεργασίες παιδιά της.
-
-    \begin{center}
-        \centering
-        \includegraphics[width=0.8\textwidth]{assets/process.png}
-    \end{center}
-
-    Το πρόγραμμα \src{forking} θα το αφήσετε να τρέχει. Σε άλλο τερματικό θα χρειαστεί να μεταγλωττίσετε και να φορτώσετε το module σας.
-
-    Στο αρχείο \src{list-children.c} βρίσκεται ο σκελετός με βάση τον οποίο θα προσθέσετε τη ζητούμενη λειτουργικότητα.
-    Συμπληρώστε τον κώδικά σας στο σημείο \src{TODO}.
-
-    Θα πρέπει να εκτελέσετε το πρόγραμμά σας, να θέσετε το κατάλληλο PID στο module σας για να βρει τη διεργασία, να το μεταγλωττίσετε και έπειτα να το φορτώσετε.
-
-\begin{warn}[Προσοχή]
-    Αν κάνετε επανεκκίνηση τη διεργασία σας, πιθανότατα θα έχει ένα νέο, διαφορετικό \src{PID}.
-    Έτσι, για να τυπώσετε πληροφορίες για τα παίδια της από το module σας θα πρέπει να εκφορτώσετε το module σας, να αλλάξετε το \src{PID} το οποίο θα αναζητήσει, 
-    να το επαναμεταγλωτίσετε και να το επαναφορτώσετε.
-\end{warn}
-
-    Για να έχετε πρόσβαση στις διεργασίες-παιδιά μιας διεργασίας, χρησιμοποιήστε το μέλος \src{children} του \src{task\_struct}.
-    Αυτό είναι μία δομή διπλά διασυνδεδεμένης λίστας στους κόμβους της οποίας βρίσκονται δομές \src{task\_struct *}.
-    Στο Linux Kernel υπάρχουν διάφορα βοηθητικά macros για το χειρισμό λιστών.
+    \textbf{Ζητούμενα:}
 
     \begin{enumerate}
-        \item Εντοπίστε τα πεδία \src{children} και \src{sibling} στην δομή \src{task\_struct} (στον πηγαίο κώδικα του Linux Kernel), τί αντιπροσωπεύει το καθένα;
-        \item Διαβάστε τον τρόπο χρήσης του βοηθητικού macro \src{list\_for\_each\_entry}\\
-            (στο αρχείο \src{linux/tools/include/linux/list.h})
-        \item Προσθέστε στο σκελετό της άσκησης τον κατάλληλο κώδικα ώστε να τυπώνεται το PID κάθε διεργασίας παιδί της αρχικής σας διεργασίας, τί παρατηρείτε;    
+        \item Παρατηρήστε ότι περνάμε τη δομή \src{registers\_t} μέσω δείκτη. Ποιός είναι αυτός ο δείκτης; Γιατί δεν αντιγράφουμε απλώς τις τιμές των registers στη στοίβα;
+        \item Αν θέλατε να τροποποιήσετε την τιμή του καταχωρητή \src{EAX} ώστε το πρόγραμμα να συνεχίσει με νέα τιμή μετά την επιστροφή από το interrupt, πώς θα το κάνατε μέσα από την \src{isr\_3};
+        \item Αν περνούσαμε τις τιμές μέσω αντιγραφής θα μπορούσαμε να τροποποιήσουμε καταχωρητές με ανάλογο τρόπο; Δοκιμάστε το!
     \end{enumerate}
-    
+
 \end{question}
-    
+
 \newpage
+
+\section{Δημιουργία Οδηγού Πληκτρολογίου (Keyboard ISR)}
+
+Σε αυτή την άσκηση θα υλοποιήσετε έναν πραγματικό οδηγό υλικού (Device Driver). Θα δημιουργήσετε έναν ISR που θα εκτελείται κάθε φορά που πατάτε ένα πλήκτρο.
+
+Το πληκτρολόγιο συνδέεται στη γραμμή \textbf{IRQ 1} του PIC. Επειδή έχουμε επαναχαρτογραφήσει τον PIC στο \src{0x20}, το IRQ 1 αντιστοιχεί στο \textbf{Vector 0x21} του IDT.
+Για να διαβάσουμε ποιο πλήκτρο πατήθηκε, πρέπει να διαβάσουμε 1 byte από τη θύρα δεδομένων του πληκτρολογίου (\src{0x60}).
+
+\begin{question}
+    Παρακάτω δίνεται ο σκελετός του \src{isr\_1} στο αρχείο \src{keyboard\_isr.c}.
+
+    \begin{file}[keyboard\_isr.c]
+    \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+void isr_1() {
+    uint8_t scancode = _______; 
+    // Use the inb function. The keyboard input is at 0x60
+
+    // check if key was pressed using !(scancode & 0x80) 
+    // and ignore key releases
+    // convert scancode to ascii 
+    // using scancode_to_ascii function
+    // print it with printf
+}
+    \end{lstlisting}
+    \end{file}
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Στο αρχείο \src{idt.c}, προσθέστε την κατάλληλη πύλη (gate) για το \textbf{Vector 0x21} ώστε να καλεί τον \src{irq\_stub\_1} (ο οποίος με τη σειρά του καλεί την \src{isr\_1}).
+        \item Συμπληρώστε τον κώδικα της \src{isr\_1}:
+        \begin{itemize}
+            \item Χρησιμοποιήστε την εντολή \src{inb(0x60)} για να διαβάσετε τον κωδικό (scancode).
+        \end{itemize}
+        \item Κάντε Compile, τρέξτε το λειτουργικό και πατήστε διάφορα πλήκτρα. Θα πρέπει να βλέπετε τους δεκαεξαδικούς κωδικούς (scancodes) και τους αντίστοιχους χαρακτήρες στην οθόνη.
+    \end{enumerate}
+
+\end{question}
+
+\section{"Αγγίζοντας" τις κλήσεις λειτουργικού}
+
+Σε αυτή την άσκηση θα φτιάξουμε μία κλήση λειτουργικού συστήματος. Η ανάπτυξη πλήρως λειτουργικών κλήσεων λειτουργικού δεν θα μας απασχολήσει σε αυτή τη δραστηριότητα, όμως
+είναι σημαντικό, όμως, να συνειδητοποιήσουμε τη σύνδεσή τους με τα interrupts.
+
+\begin{question}
+    Σε αυτή την άσκηση θα υλοποιήσετε ένα syscall από το μηδέν. Το stub της assembly είναι έτοιμο υλοποιημένο.
+
+    Για να το δείτε να δουλεύει καλέστε τη συνάρτηση \src{syscall\_echo} στον φάκελο \src{kernel.c}.
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Συμπληρώστε τον κώδικα του service routine για την κλήση του λειτουργικού που ζητείται, ώστε να εκτυπώνεται η τιμή του \src{EAX} σε χαρακτήρα.
+        \item Κάντε map το service routine στο vector 0x80 του IDT.
+        \item Υλοποιήστε μία συνάρτηση \src{print\_with\_syscall} μέσα στο αρχείο \src{kernel.c} η οποία θα δέχεται ως όρισμα έναν δείκτη σε χαρακτήρα και θα εκτυπώνει
+        το κείμενο χρησιμοποιώντας το \\ παραπάνω syscall.
+    \end{enumerate}
+
+    Για τυχόν απορίες ανατρέξτε στις παραπάνω ασκήσεις.
+\end{question}
+
+\section{Debugging στα τυφλά (Bonus)}
+
+Σε αυτή την ενότητα θα μάθουμε να σκεφτόμαστε από το μηδέν σαν μηχανικοί λειτουργικών συστημάτων. 
+
+Η μεγαλύτερη δυσκολία στην ανάπτυξη λειτουργικών συστημάτων είναι η μικρή απόσταση με το υλικό του υπολογιστή. Η συνεργασία κώδικα και επεξεργαστή, χωρίς ένα
+ήδη υπάρχον στώρμα αφαιρετικότητας από κάποιο λειτουργικό σύστημα καθιστά το debugging δύσκολο. Σε αυτή την άσκηση θα προκαλέσουμε ένα παράδοξο πρόβλημα και...
+θα κολυμπήσουμε στα βαθιά. Θα προσπαθήσουμε να εξηγήσουμε το πρόβλημα μέσω debugging και γνώσεων που μάθαμε έως τώρα.
+
+\begin{question}
+    Για να αναπαράξετε το bug στον κώδικα σβήστε τον βρόχο while που υπάρχει στο τέλος της \src{kernel.c}, χωρίς να σβήσετε την εντολή \src{halt}.
+    Έπειτα, αξιοποιήστε τη συνάρτηση \src{mask\_timer}, ώστε να \\ απενεργοποιήσετε το interrupt του timer, για να μην ενοχλεί στο debugging.
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Προκαλέστε κάποιο interrupt. Τι συμβαίνει; Γιατί; Πώς λύνεται αυτό το πρόβλημα και γιατί;
+    \end{enumerate}
+
+    Καλή τύχη!
+\end{question}
+
+\section{Παραδοτέα}
+
+Συντάξτε μία αναφορά σε \src{pdf} η οποία θα περιέχει τις απαντήσεις στις θεωρητικές ερωτήσεις (και όχι μεγάλα κομμάτια κώδικα), τα σημεία του κώδικα τα οποία έχετε αλλάξει
+και τις επεξηγήσεις των αλλαγών. Το υποβληθέν θα είναι ένα συμπιεσμένο αρχείο \src{zip} με όνομα upAM.zip με τα αρχεία κώδικα τα οποία έχετε τροποποιήσει.
+Καλή επιτυχία!
 
 \section*{Περισσότερες Πηγές}
 
 \begin{itemize}
+    \item \href{https://wiki.osdev.org/Interrupt_Descriptor_Table}{OSDev Wiki - IDT}
+    \item \href{https://wiki.osdev.org/8259_PIC}{OSDev Wiki - 8259 PIC}
     \item \href{https://www.doc-developpement-durable.org/file/Projets-informatiques/cours-&-manuels-informatiques/Linux/Linux\%20Kernel\%20Development,\%203rd\%20Edition.pdf}{Linux Kernel Development}
-    \item \href{https://sysprog21.github.io/lkmpg/}{Linux Kernel Module Programming Guide}
-    \item \href{https://lwn.net/Kernel/LDD3/}{Linux Device Drivers}
-    \item Operating System Concepts 9th Edition - Silbershatz, Galvin, Gagne (ch. 18)
+    \item Operating System Concepts 9th Edition - Silbershatz, Galvin, Gagne
+    \item \href{https://github.com/dreamportdev/Osdev-Notes/blob/master/02_Architecture/05_InterruptHandling.md}{Osdev-Notes}
 \end{itemize}
 
 \end{document}
