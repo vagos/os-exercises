@@ -1,0 +1,473 @@
+%----------------------------------------------------------------------------------------
+%   PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[18pt]{extarticle}
+
+\input{structure.cls} % Include the file specifying the document structure and custom commands
+
+%----------------------------------------------------------------------------------------
+%   ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Υλοποίηση Διακοπών Λειτουργικού συστήματος (Interrupts) \\Λειτουργικά Συστήματα (ECE ΓΚ702)} % Title of the assignment
+
+\author{
+    \footnotesize Χρήστος Φείδας\\ 
+    \footnotesize \src{fidas@upatras.gr} \and 
+    \footnotesize Ευάγγελος Λάμπρου\\ 
+    \footnotesize \src{e.lamprou@upnet.gr} \and
+    \footnotesize Ζεϊμπέκης Βασίλειος\\
+    \footnotesize \src{bzeimp@gmail.com}
+} % Author name and email address
+
+\date{University of Patras, Department of Electrical and Computer Engineering} % University, school and/or department name(s) and a date
+
+\usepackage{fancyhdr}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\pagestyle{fancy}
+%... then configure it.
+\fancyhf{} % sets both header and footer to nothing
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{} % clear all header fields
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{Χρήστος Φείδας, Ευάγγελος Λάμπρου, Ζεϊμπέκης Βασίλειος}
+\fancyfoot[R]{\thepage}
+
+\maketitle
+
+%----------------------------------------------------------------------------------------
+%   INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{Εισαγωγή}
+
+Η εργασία αυτή κάνει μία εισαγωγή στην υλοποίηση των Interrupts και του Interrupt Descriptor Table
+για το open source εκπαιδευτικό λειτουργικό σύστημα Skyl-OS.
+
+Μπορείτε να βρείτε το συνοδευτικό βιβλίο του Skyl-OS \href{https://github.com/Billyzeim/Skyl-OS/blob/main/docs/book/main.pdf}{εδώ}.
+
+\subsection{Ο πηγαίος κώδικας του Skyl-OS kernel.}
+
+Ο πηγαίος κώδικας του SKyl-OS είναι διαθέσιμος ελεύθερα. 
+Κάποιος μπορεί να κατεβάσει τον κώδικα, να τον επεξεργαστεί και να δημιουργήσει δικές του εκδόσεις του SKyl-OS.
+Στα πλαίσια των εργασιών θα ζητηθεί να τροποποιήσετε κομμάτια του πυρήνα του Skyl-OS.
+
+Για να εξερευνήσετε τον πηγαίο κώδικα του Skyl-OS μπορείτε να κάνετε λήψη του κώδικα 
+από το \href{https://github.com/Billyzeim/Skyl-OS/blob/main/}{GitHub repo} και χρήση του αγαπημένου σας editor 
+(Visual Studio Code, Vim, Emacs ...) για αναζήτηση σε αυτόν.
+
+\subsection{Ο kernel του Skyl-OS}
+
+Ο πυρήνας (kernel) του Skyl-OS, όπως των Linux, είναι μονολιθικός, πράγμα που σημαίνει πως αν κάποιος θέλει να 
+προσθέσει νέα λειτουργικότητα σε αυτόν πρέπει να επεξεργαστεί τον πηγαίο κώδικα, 
+να τον επαναμεταγλωττίσει (recompile) και να κάνει επανεκκίνηση το σύστημά του ώστε να δει τις αλλαγές του.
+
+Σε αντίθεση, όμως, με τα Linux, το Skyl-OS είναι μικρό λειτουργικό σύστημα, ώστε να προσφέρεται για εκπαιδευτικές δραστηριότητες.
+Για αυτό τον λόγο, το Skyl-OS δεν λειτουργεί με modules. Συνεπώς, πρέπει να ακολουθήσουμε τις οδηγίες, ώστε να κάνουμε compile 
+τον πυρήνα του λειτουργικού. 
+
+\begin{warn}[Προσοχή]
+    Τα εργαλεία που χρησιμοποιούμε για να κάνουμε compile το Skyl-OS είναι γραμμένα για Linux. Προτείνεται η υλοποίηση όσων
+    ζητούνται στη δραστηριότητα να γίνει σε Debian διανομή των Linux.
+\end{warn}
+
+\subsection{Τί είναι ένα Interrupt;}
+
+Κατά τη λειτουργία του, ένα σύστημα συχνά δέχεται εξωτερικά, ή και εσωτερικά όπως θα δούμε, σήματα εισόδου. Όμως, όταν αυτά τα σήματα
+έρθουν, ο επεξεργαστής θα διεξάγει κάποια άλλη διαδικασία. Ο ρόλος των Interrupts είναι, όπως φαίνεται και από το όνομά τους, να διακόψουν
+τη λειτουργία του επεξεργαστή, χωρίς να επηρεάσουν την τρέχουσα κατάστασή του, ώστε αυτός να διαχειριστεί το σήμα εισόδου πριν συνεχίσει να
+εκτελεί τη διεργασία που είχε αφήσει στη μέση.
+
+\subsection{Είδη Interrupts}
+
+Τα Interrupts χωρίζονται σε δύο μεγάλες κατηγορίες, τα Software Interrupts και τα Hardware Interrupts.
+
+\subsubsection{Hardware Interrupts}
+
+Τα Hardware Interrupts προέρχονται από εξωτερικές συσκευές (περιφερειακές), όπως το πληκρολόγιο, το ποντίκι, σκληροί δίσκοι ή κάρτες δικτύου.
+Αυτά στέλνουν Interrupt Requests (IRQs), δηλαδή σήματα τα οποία προσδιορίζουν ποιος είναι ο στόχος του Interrupt. Για παράδειγμα, κάθε φορά
+που ένα πλήκτρο πατιέται αυτό στέλνει ένα IRQ με συγκεκριμένη κωδικοποίηση στον επεξεργαστή (στην πραγματικότητα μέσω του PIC για το οποίο
+μπορείτε να διαβάσετε περισσότερα \href{https://wiki.osdev.org/8259_PIC}{εδώ}). Έπειτα, αυτό το σήμα μεταφράζεται από το PIC σε ένα interrupt vector. Τέλος, είναι δουλειά του 
+λειτουργικού συστήματος να αντιστοιχίσει το interrupt vector σε κάποιο ISR.
+
+Στην x86 αρχιτεκτονική, μάλιστα, υπάρχουν κάποια προβλήματα τα οποία έχουν δημιουργηθεί από τη συνεργασία της IBM και της Intel. Όταν η IBM
+έφτιαξε τους πρώτους υπολογιστές οι οποίοι έτρεχαν σε Real Mode, έφτιαξε το PIC ώστε τα IRQs 0-7 να αντιστοιχίζονται στα interrupt vectors
+0x08-0x0F. Αργότερα, όταν η Intel χρησιμοποίησε το ίδιο υλικό για υπολογιστές σε Protected Mode, δέσμευσε τα vectors 0x00-0x1F για CPU 
+Exceptions. Για να λύσουμε αυτό το πρόβλημα πρέπει να κάνουμε επαναχαρτογράφηση του PIC, ώστε τα IRQs 0-7 να αντιστοιχίζονται στα vectors
+0x20 και μετά.
+
+Τα Hardware Interrupts χωρίζονται και αυτά με τη σειρά τους σε Maskable και Non-Maskable. Τα πρώτα μπορούν να απενεργοποιηθούν, ή να αγνοηθούν,
+προκειμένου να μή διακόψουν διεργασίες υψηλότερης προτεραιότητας, ενώ τα δεύτερα σημαίνουν ότι έχει συμβεί κάτι καταστροφικό (π.χ. πρόβλημα με
+το υλικό του υπολογιστή).
+
+\subsubsection{Software Interrupts}
+
+Τα Software Interrupts προέρχονται από διαδικασίες εντός του λειτουργικού συστήματος, δηλαδή από προγράμματα (user or kernel space) ή από
+exceptions (π.χ. πρόσβαση σε απαγορευμένη μνήμη).
+
+Για να προκαλέσει ένα πρόγραμμα κάποιο Interrupt, πρέπει να κάνει μία κλήση στο λειτουργικό σύστημα (System Call), ώστε να ζητήσει κάποια 
+υπηρεσία του συστήματος (π.χ. είσοδο/έξοδο, δέσμευση μνήμης). Οι κλήσεις λειτουργικών συστημάτων θα καλυφθούν σε μετέπειτα κεφάλαια. 
+
+Εκτός, από προγραμματισμένα Interrupts, όμως, μπορεί να προκύψει και κάποιο πρόβλημα (exception) κατά την εκτέλεση κάποιου προγράμματος,
+το οποίο δεν είναι αναμενόμενο. Για παράδειγμα, κάποιο πρόγραμμα μπορεί να προσπαθήσει να διαβάσει μνήμη η οποία δεν του ανήκει. Σε τέτοιες
+περιπτώσεις ενεργοποιούνται συγκεκριμένα Interrupts αυτόματα από τον επεξεργαστή και το λειτουργικό μας σύστημα πρέπει να έχει μεριμνήσει, ώστε
+να τα διαχειρίζεται σωστά.
+
+\subsection{Πώς διαχειριζόμαστε τα Interrups}
+
+Αρχικά, ο επεξεργαστής αναγνωρίζει ένα σήμα Interrupt. Μόλις γίνει αυτό ξεκινάει μία διαδικασία η οποία ονομάζεται context switching.
+Στο context switching το λειτουργικό σύστημα πρέπει να αποθηκεύσει την τρέχουσα κατάσταση του επεξεργαστή, δηλαδή όλες τις τιμές των
+register του και του Program Counter, συνήθως κάνοντας τες push στο stack.
+
+Έπειτα, ο επεξεργαστής πρέπει να ξεκινήσει να εκτελεί μία ρουτίνα, ώστε να εξυπηρετήσει το Interrupts. Αυτές οι ρουτίνες ονομάζονται
+Interrupt Service Routines (ISR). Για να γίνει η αντιστοίχιση του IRQ στο σωστό ISR, κάθε σήμα Interrupt έχει και ένα vector το οποίο
+προσδιορίζει ποιά ρουτίνα πρέπει να κληθεί. Αυτή η αντιστοίχιση γίνεται μέσω ενός πίνακα, του Interrupt Vector Table (IVT) ή Interrupt
+Descriptor Table (IDT). Ο επεξεργαστής έτσι μεταφέρει την εκτέλεση στο ISR και εξυπηρετεί το IRQ. 
+
+Όταν τελειώσει η εκτέλεση του ISR, ο επεξεργαστής πρέπει να επιστρέψει στην κανονική του λειτουργία, συνήθως μέσω της εντολής iret.
+Το λειτουργικό σύστημα επαναφέρει τις τιμές των καταχωρητών του επεξεργαστή από το stack και συνεχίζει την εκτέλεση του προηγούμενου 
+προγράμματος από το σημείο που είχε σταματήσει.
+
+\subsection{Interrupt Descriptor Table}
+
+Όπως αναφέρθηκε και νωρίτερα, το IDT είναι ένας πίνακας που χρησιμοποιεί ο x86 επεξεργαστής, για να συνδέει κάθε IRQ με το αντίστοιχο
+ISR του.
+
+\subsubsection{Δομή του IDT}
+
+Ο πίνακας αυτός έχει 256 εισαγωγές, κάθε μία εκ των οποίων έχει ένα interrupt vector number από το 0 έως και το 255. Κάθε εισαγωγή του
+πίνακα (Gate Descriptor) κρατάει τις εξής πληροφορίες: τον segment selector που δείχνει σε ποιό code segment βρίσκεται ISR, το offset, 
+δηλαδή τη θέση του ISR μέσα στο code segment, το ελάχιστα δικαιώματα που πρέπει να έχει ένα πρόγραμμα για να εκτελεστεί το ISR (Descriptor
+Privilege Level ή DPL), και το είδος του gate, δηλάδή αν είναι hardware interrupt ή software interrupt. Περιέχει,
+δηλαδή, τις απαραίτητες πληροφορίες για να εκτελεστούν ρουτίνες υψηλών privileges μέσω κώδικα χαμηλών privileges.
+
+Το IDT μπορεί να έχει διαφορετικό μέγεθος ανάλογα με το πλήθος των interrupts που περιέχει και μπορεί να βρίσκεται οπουδήποτε στη φυσική
+μνήμη. Για να έχει πρόσβαση ο επεξεργαστής σε αυτό πρέπει το λειτουργικό σύστημα να προσδιορίσει που βρίσκεται το IDT. Για να το κάνει
+αυτό χρησιμοποιεί ένα 48-bit register του επεξεργαστή το IDT Register. Μέσα σε αυτό βρίσκεται η διεύθυνση στην οποία αρχίζει το IDT και
+το όριο του.
+
+\begin{figure}[H]
+    \centering
+    \begin{tabular}{|c|c|l|l|}
+        \hline
+        \textbf{Vector} & \textbf{Type} & \textbf{Description} & \textbf{Handler Function} \\
+        \hline
+        \texttt{0x00} & Exception & Divide by Zero & \texttt{isr\_32} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x01} & Exception & Breakpoint & \texttt{isr\_3} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x0E} & Exception & Page Fault & \texttt{isr\_14} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+        \texttt{0x20} & IRQ 0 & Timer (PIT) & \texttt{isr\_0} \\
+        \hline
+        \texttt{0x21} & IRQ 1 & \textbf{Keyboard} & \texttt{isr\_1} \\
+        \hline
+        \dots & \dots & \dots & \dots \\
+        \hline
+    \end{tabular}
+    \caption{Η χαρτογράφηση του IDT στο Skyl-OS. Οι πρώτες 32 θέσεις είναι δεσμευμένες από την Intel (Exceptions), ενώ οι θέσεις 0x20-0x2F χρησιμοποιούνται από τον επαναχαρτογραφημένο PIC.}
+    \label{fig:idt_map}
+\end{figure}
+
+\subsubsection{Λειτουργία του IDT}
+
+Όταν ο επεξεργαστής λαμβάνει ένα σήμα interrupt ανατρέχει στο IDT ώστε να προσδιορίσει τη θέση στη μνήμη του ISR. Το σήμα που λαμβάνει
+περιέχει και το vector number του interrupt. Χρησιμοποιώντας τον παρακάτω υπολογισμό ο επεξεργαστής μπορεί να προσδιορίσει τη θέση του
+ISR: $$\text{ISR Address} = \text{IDTR.Base} + (\text{Vector Number} \times \text{Descriptor Size})$$
+
+Έπειτα, ο επεξεργαστής ελέγχει ότι το τρέχον privilege level είναι μεγαλύτερο ή ίσο του DPL του gate και μεταφέρει την εκτέλεση στο ISR.
+Αν το gate δείχνει ότι είναι hardware interrupt ο επεξεργαστής αυτόματα μηδενίζει το IF, ώστε να απενεργοποιήσει τα maskable interrupts.
+Αν το gate δείχνει ότι είναι software interrupt ο επεξεργαστής αφήνει το IF ενεργό, αφήνοντας άλλα interrupts να καλούνται, καθώς τα
+software interrupts μπορεί να είναι χρονοβόρα. Έτσι, εξασφαλίζεται ότι το σύστημα εξυπηρετεί όλες τις ανάγκες των interrupts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Interrupt_Figure.png}
+    \caption{Interrupt Handling Flow Visual}
+    \label{fig:int_handling}
+\end{figure}
+
+\subsection{Προετοιμασία περιβάλλοντος ανάπτυξης.}
+
+Όπως αναφέρθηκε νωρίτερα το περιβάλλον στο οποίο γίνεται η ανάπτυξη του Skyl-OS είναι Debian Linux. Αν το κύριο λειτουργικό σας σύστημα δεν
+είναι Debian Linux προτείνεται να δουλέψετε σε κάποιο εικονικό μηχάνημα (virtual machine), ώστε να μπορείτε να εγκαταστήσετε να απαραίτητα
+εργαλεία.
+
+Για να έχετε ένα εικονικό μηχάνημα μπορείτε να χρησιμοποιήσετε το δωρεάν λογισμικό \href{https://www.virtualbox.org/}{Virtual Box}
+Από εκεί, μπορείτε να δημιουργήσετε ένα εικονικό μηχάνημα χρησιμοποιώντας οποιαδήποτε διανομή των Linux επιθυμείτε.  
+Διαφοροποιήσεις μεταξύ διανομών θα υπάρχουν μόνο στη διαδικασία απόκτησης των απαραίτητων πακέτων για την ανάπτυξη του κώδικα, όμως,
+σε αυτό τον οδηγό δίνονται τα πακέτα για Debian Linux.
+
+\subsubsection{Απαραίτητα Πακέτα}
+
+Θα χρειαστεί να υπάρχουν στο σύστημά σας ορισμένα πακέτα:
+
+Για διανομές βασισμένες στα Debian:
+
+\begin{commandline}
+    \begin{verbatim}
+$ sudo apt-get update
+$ sudo apt install build-essential nasm qemu-system-x86
+    \end{verbatim}
+\end{commandline}
+
+\subsubsection{Λήψη του πηγαίου κώδικα}
+
+Ο πηγαίος κώδικας του Skyl-OS βρίσκεται στο GitHub. Για να τον επεξεργαστείτε πρέπει πρώτα να τον κάνετε clone από το repository στο
+μηχάνημά σας και να αλλάξετε στο branch idt-lab στο οποίο υπάρχει ο κώδικας της άσκησης.
+
+\begin{commandline}
+    \begin{verbatim}
+$ git clone https://github.com/Billyzeim/Skyl-OS.git
+$ git checkout idt-lab
+    \end{verbatim}
+\end{commandline}
+
+\begin{info}[Σημείωση]
+    Το branch idt-lab έχει φτιαχτεί για διδακτικούς σκοπούς και εσκεμμένα έχει κάποια errors. Στις παρακάτω δραστηριότητες θα κληθείτε
+    να φτιάξετε τα εν λόγω errors.
+\end{info}
+
+\subsubsection{Compilation και εκτέλεση}
+
+Για να κάνετε compile και να τρέξετε το Skyl-OS στο qemu virtual machine χρησιμοποιήστε την παρακάτω εντολή:
+
+\begin{commandline}
+    \begin{verbatim}
+$ make run
+    \end{verbatim}
+\end{commandline}
+
+\section{Υλοποίηση IDT στο Skyl-OS}
+
+Σε αυτή την ενότητα θα εργαστούμε πάνω στον κώδικα του Skyl-OS για την αρχικοποίηση του Interrupt Descriptor Table (IDT).
+
+\begin{question}    
+    Στόχος της άσκησης είναι η κατανόηση της δομής μιας IDT entry (gate descriptor) και του τρόπου με τον οποίο ο x86 επεξεργαστής 
+    μεταβαίνει από κανονική εκτέλεση σε έναν interrupt handler. Επίσης, θα δούμε πως οι αρχιτεκτονικές αποφάσεις τον μηχανικών εισάγουν 
+    περιορισμούς στα συστήματά μας τους οποίους καλούμαστε να ξεπεράσουμε.
+
+    Μελετήστε το αρχείο \src{idt\_implementation.c}. Εστιάστε στη συνάρτηση \src{helper} και στα κενά που πρέπει να συμπληρωθούν στην \src{idt\_init}.
+
+    \begin{file}[idt\_implementation.c (Snippet)]
+    \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+void helper(uint8_t num, uint32_t base, 
+        uint16_t sel, uint8_t flags) {
+    idt_entries[num].base_low  = base & 0xFFFF;
+    idt_entries[num].base_high = (base >> 16) & 0xFFFF;
+    idt_entries[num].sel       = sel;
+    idt_entries[num].flags     = flags;
+    // ...
+}
+    \end{lstlisting}
+    \end{file}
+
+    \begin{file}[idt\_implementation.c (Snippet)]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+helper(0, (uint32_t) _________, 0x08, 0x8E);
+    \end{lstlisting}
+    \end{file}
+
+    \begin{file}[idt.h (Snippet)]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+// 1. The IDT Entry Structure
+struct idt_entry_struct {
+    uint16_t base_low; // The lower 16 bits of
+                       // the address to jump to
+    uint16_t sel; // Kernel segment selector
+    uint8_t  always0; // This must always be 0
+    uint8_t  flags; // More flags (Present, DPL, etc)
+    uint16_t base_high; // The upper 16 bits of the 
+                        // address to jump to
+} __attribute__((packed));
+    \end{lstlisting}
+    \end{file}
+
+    \textbf{Ζητούμενα:}
+    
+    \begin{enumerate}
+        \item Αναλύστε τη δομή μιας IDT entry (gate descriptor) από το αρχείο \src{idt.h}.
+        \begin{enumerate}
+            \item Τι αναπαριστά κάθε πεδίο της δομής;
+            \item Γιατί η διεύθυνση του ISR (\src{base}) χωρίζεται σε base\_low και \src{base\_high};
+            \item Γιατί το πεδίο \src{always0} πρέπει να είναι μηδέν; Τι θα συμβεί αν δεν είναι;
+            \item Τι πληροφορία περιέχει το πεδίο flags; Ποια bits καθορίζουν:
+            \begin{enumerate}
+                \item αν το interrupt είναι ενεργό;
+                \item το privilege level;
+                \item τον τύπο του gate;
+            \end{enumerate}
+        \end{enumerate}
+        \item Ποιός είναι ο ρόλος της συνάρτησης \src{helper}; Σε τι χρησιμεύει; Δώστε της ένα περιγραφικό όνομα.
+        \item Συμπληρώστε τα κενά (\_\_\_\_\_\_\_\_) στον κώδικα ώστε να οριστούν οι handlers για Division by Zero, Page Fault και Breakpoint. Δείτε το αρχείο idt.asm για βοήθεια στις ονομασίες.
+        \item Γιατί είναι κρίσιμο να απενεργοποιήσουμε τα interrupts (\src{cli}) στην αρχή; Τι θα συμβεί αν ο Timer (IRQ0) στείλει σήμα πριν φορτωθεί το IDT;
+        \item Τι είναι ο PIC και γιατί πρέπει να τον επαναχαρτογραφήσουμε (remap) στις διευθύνσεις \src{0x20 - 0x2F}; 
+    \end{enumerate}
+
+\end{question}
+
+\begin{question}
+    Ένα κρίσιμο κομμάτι της διαχείρισης διακοπών είναι η σωστή διαχείριση της στοίβας (stack). Όταν συμβαίνει μια διακοπή, 
+    ο επεξεργαστής και ο assembly wrapper σπρώχνουν τιμές στη στοίβα που περιγράφουν την κατάσταση του συστήματος.
+
+    Παρακάτω δίνεται ο κώδικας για τον χειριστή του Breakpoint Exception (INT 3) στο αρχείο \src{isrs.c} και το assembly stub με το οποίο
+    καλείται η ρουτίνα isr\_3.
+
+    \begin{file}[isr\_3.c]
+        \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+#include <stdint.h>
+#include <terminal_io.h>
+#include <isrs.h>
+
+typedef struct {
+    // Pushed by pushad
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; 
+    // Pushed by CPU
+    uint32_t eip, cs, eflags;                        
+} registers_t;
+
+void isr_3(registers_t *regs) {
+    printf("\n=== DEBUG BREAKPOINT ===\n");
+    kprint("EAX: "); printf("%x\n", regs->eax);
+    kprint(" EBX: "); printf("%x\n", regs->ebx);
+    kprint(" EIP: "); printf("%x\n", regs->eip);
+    kprint("System Halted for inspection.\n");
+    printf("=== DEBUG BREAKPOINT END ===\n");
+}
+        \end{lstlisting}
+    \end{file}
+    
+    \begin{file}[idt.asm]
+        \footnotesize \begin{lstlisting}[language={[x86masm]Assembler}, tabsize=2]
+isr_3_asm:
+    pushad
+    push esp ; This passes a pointer
+    ; for the regs structure
+    call isr_3  ; calls void isr_3
+    add esp, 4 ; Clean up the stack
+    popad ; Now loads from stack
+    iret
+        \end{lstlisting}
+    \end{file}
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Παρατηρήστε ότι περνάμε τη δομή \src{registers\_t} μέσω δείκτη. Ποιός είναι αυτός ο δείκτης; Γιατί δεν αντιγράφουμε απλώς τις τιμές των registers στη στοίβα;
+        \item Αν θέλατε να τροποποιήσετε την τιμή του καταχωρητή \src{EAX} ώστε το πρόγραμμα να συνεχίσει με νέα τιμή μετά την επιστροφή από το interrupt, πώς θα το κάνατε μέσα από την \src{isr\_3};
+        \item Αν περνούσαμε τις τιμές μέσω αντιγραφής θα μπορούσαμε να τροποποιήσουμε καταχωρητές με ανάλογο τρόπο; Δοκιμάστε το!
+    \end{enumerate}
+
+\end{question}
+
+\newpage
+
+\section{Δημιουργία Οδηγού Πληκτρολογίου (Keyboard ISR)}
+
+Σε αυτή την άσκηση θα υλοποιήσετε έναν πραγματικό οδηγό υλικού (Device Driver). Θα δημιουργήσετε έναν ISR που θα εκτελείται κάθε φορά που πατάτε ένα πλήκτρο.
+
+Το πληκτρολόγιο συνδέεται στη γραμμή \textbf{IRQ 1} του PIC. Επειδή έχουμε επαναχαρτογραφήσει τον PIC στο \src{0x20}, το IRQ 1 αντιστοιχεί στο \textbf{Vector 0x21} του IDT.
+Για να διαβάσουμε ποιο πλήκτρο πατήθηκε, πρέπει να διαβάσουμε 1 byte από τη θύρα δεδομένων του πληκτρολογίου (\src{0x60}).
+
+\begin{question}
+    Παρακάτω δίνεται ο σκελετός του \src{isr\_1} στο αρχείο \src{keyboard\_isr.c}.
+
+    \begin{file}[keyboard\_isr.c]
+    \footnotesize \begin{lstlisting}[language=C, tabsize=2]
+void isr_1() {
+    uint8_t scancode = _______; 
+    // Use the inb function. The keyboard input is at 0x60
+
+    // check if key was pressed using !(scancode & 0x80) 
+    // and ignore key releases
+    // convert scancode to ascii 
+    // using scancode_to_ascii function
+    // print it with printf
+}
+    \end{lstlisting}
+    \end{file}
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Στο αρχείο \src{idt.c}, προσθέστε την κατάλληλη πύλη (gate) για το \textbf{Vector 0x21} ώστε να καλεί τον \src{irq\_stub\_1} (ο οποίος με τη σειρά του καλεί την \src{isr\_1}).
+        \item Συμπληρώστε τον κώδικα της \src{isr\_1}:
+        \begin{itemize}
+            \item Χρησιμοποιήστε την εντολή \src{inb(0x60)} για να διαβάσετε τον κωδικό (scancode).
+        \end{itemize}
+        \item Κάντε Compile, τρέξτε το λειτουργικό και πατήστε διάφορα πλήκτρα. Θα πρέπει να βλέπετε τους δεκαεξαδικούς κωδικούς (scancodes) και τους αντίστοιχους χαρακτήρες στην οθόνη.
+    \end{enumerate}
+
+\end{question}
+
+\section{"Αγγίζοντας" τις κλήσεις λειτουργικού}
+
+Σε αυτή την άσκηση θα φτιάξουμε μία κλήση λειτουργικού συστήματος. Η ανάπτυξη πλήρως λειτουργικών κλήσεων λειτουργικού δεν θα μας απασχολήσει σε αυτή τη δραστηριότητα, όμως
+είναι σημαντικό, όμως, να συνειδητοποιήσουμε τη σύνδεσή τους με τα interrupts.
+
+\begin{question}
+    Σε αυτή την άσκηση θα υλοποιήσετε ένα syscall από το μηδέν. Το stub της assembly είναι έτοιμο υλοποιημένο.
+
+    Για να το δείτε να δουλεύει καλέστε τη συνάρτηση \src{syscall\_echo} στον φάκελο \src{kernel.c}.
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Συμπληρώστε τον κώδικα του service routine για την κλήση του λειτουργικού που ζητείται, ώστε να εκτυπώνεται η τιμή του \src{EAX} σε χαρακτήρα.
+        \item Κάντε map το service routine στο vector 0x80 του IDT.
+        \item Υλοποιήστε μία συνάρτηση \src{print\_with\_syscall} μέσα στο αρχείο \src{kernel.c} η οποία θα δέχεται ως όρισμα έναν δείκτη σε χαρακτήρα και θα εκτυπώνει
+        το κείμενο χρησιμοποιώντας το \\ παραπάνω syscall.
+    \end{enumerate}
+
+    Για τυχόν απορίες ανατρέξτε στις παραπάνω ασκήσεις.
+\end{question}
+
+\section{Debugging στα τυφλά (Bonus)}
+
+Σε αυτή την ενότητα θα μάθουμε να σκεφτόμαστε από το μηδέν σαν μηχανικοί λειτουργικών συστημάτων. 
+
+Η μεγαλύτερη δυσκολία στην ανάπτυξη λειτουργικών συστημάτων είναι η μικρή απόσταση με το υλικό του υπολογιστή. Η συνεργασία κώδικα και επεξεργαστή, χωρίς ένα
+ήδη υπάρχον στώρμα αφαιρετικότητας από κάποιο λειτουργικό σύστημα καθιστά το debugging δύσκολο. Σε αυτή την άσκηση θα προκαλέσουμε ένα παράδοξο πρόβλημα και...
+θα κολυμπήσουμε στα βαθιά. Θα προσπαθήσουμε να εξηγήσουμε το πρόβλημα μέσω debugging και γνώσεων που μάθαμε έως τώρα.
+
+\begin{question}
+    Για να αναπαράξετε το bug στον κώδικα σβήστε τον βρόχο while που υπάρχει στο τέλος της \src{kernel.c}, χωρίς να σβήσετε την εντολή \src{halt}.
+    Έπειτα, αξιοποιήστε τη συνάρτηση \src{mask\_timer}, ώστε να \\ απενεργοποιήσετε το interrupt του timer, για να μην ενοχλεί στο debugging.
+
+    \textbf{Ζητούμενα:}
+
+    \begin{enumerate}
+        \item Προκαλέστε κάποιο interrupt. Τι συμβαίνει; Γιατί; Πώς λύνεται αυτό το πρόβλημα και γιατί;
+    \end{enumerate}
+
+    Καλή τύχη!
+\end{question}
+
+\section{Παραδοτέα}
+
+Συντάξτε μία αναφορά σε \src{pdf} η οποία θα περιέχει τις απαντήσεις στις θεωρητικές ερωτήσεις (και όχι μεγάλα κομμάτια κώδικα), τα σημεία του κώδικα τα οποία έχετε αλλάξει
+και τις επεξηγήσεις των αλλαγών. Το υποβληθέν θα είναι ένα συμπιεσμένο αρχείο \src{zip} με όνομα upAM.zip με τα αρχεία κώδικα τα οποία έχετε τροποποιήσει.
+Καλή επιτυχία!
+
+\section*{Περισσότερες Πηγές}
+
+\begin{itemize}
+    \item \href{https://wiki.osdev.org/Interrupt_Descriptor_Table}{OSDev Wiki - IDT}
+    \item \href{https://wiki.osdev.org/8259_PIC}{OSDev Wiki - 8259 PIC}
+    \item \href{https://www.doc-developpement-durable.org/file/Projets-informatiques/cours-&-manuels-informatiques/Linux/Linux\%20Kernel\%20Development,\%203rd\%20Edition.pdf}{Linux Kernel Development}
+    \item Operating System Concepts 9th Edition - Silbershatz, Galvin, Gagne
+    \item \href{https://github.com/dreamportdev/Osdev-Notes/blob/master/02_Architecture/05_InterruptHandling.md}{Osdev-Notes}
+\end{itemize}
+
+\end{document}
